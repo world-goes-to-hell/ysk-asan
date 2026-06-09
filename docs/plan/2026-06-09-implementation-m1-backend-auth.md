@@ -966,15 +966,25 @@ git push origin main
 
 - [x] **환경 준비**: Java 17, Gradle wrapper 8.6, SSH 터널(`scripts/db-tunnel.ps1`), 테스트 스키마 `ysk_asan_test`(ysk 권한 부여 완료)
 - [x] **Task 1**: Spring Boot 부트스트랩 + 컨텍스트 로드 테스트 — 커밋 `cacdc80`, `./gradlew test` PASS(실 MariaDB 터널 연결 검증)
-- [ ] **Task 2**: User 엔티티 + UserRepository
-- [ ] **Task 3**: 보안 기반(BCrypt/UserDetailsService/SecurityConfig/예외핸들러)
-- [ ] **Task 4**: 회원가입 API
-- [ ] **Task 5**: 로그인/로그아웃/me
-- [ ] **Task 6**: 전체 테스트 + 수동 검증 + 마무리
+- [x] **Task 2**: User 엔티티 + UserRepository (`fcbc9b7`)
+- [x] **Task 3**: 보안 기반 (`c2bf3ed`)
+- [x] **Task 4**: 회원가입 API (`0ac7587`)
+- [x] **Task 5**: 로그인/로그아웃/me (`8e3d350`)
+- [x] **Task 6**: 전체 테스트 9개 PASS + 격리(@Transactional, `f04a5c7`) + 리뷰 반영(`837f4d5`)
+
+**✅ M1 완료.** 최종 코드 리뷰(java-reviewer) 후 보안·견고성 수정 반영: 세션 고정 방어, 인증예외 포괄(`AuthenticationException`), logout CSRF 보호+테스트, 동시가입 409, 엔티티 `@Setter` 제거.
+
+#### M2 진행 전 검토할 리뷰 보류 항목
+- HIGH-3: `me()`가 삭제된 사용자에 400 반환(401이 맞음) — 아래 AuthService 분리 시 함께 처리
+- HIGH-4: 인증 로직(세션/SecurityContext 조작)을 컨트롤러 → `AuthService`로 분리(테스트 가능성↑)
+- MEDIUM-1: `UserService`가 JPA 엔티티 반환 → M2 연관관계 추가 시 DTO 반환으로 전환(LazyInit 예방)
+- MEDIUM-2: 통합 테스트가 SSH 터널 외부 DB 의존 → CI에서 불안정. 향후 Testcontainers 검토
+- MEDIUM-5: 검증 실패(비번 8자 미만, 사용자명 3자 미만) 테스트 보강
+- LOW: 세션키를 `HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY` 상수 참조, `GlobalExceptionHandler` 패키지 위치(config→exception)
 
 ### 다음 세션에서 이어가는 법
 1. **터널 먼저 켜기**: PowerShell에서 `cd D:\DEV\WORKSPACE\PERSONAL\ysk-asan; .\scripts\db-tunnel.ps1` (SSH 비번)
-2. 다음처럼 요청: *"이 M1 계획(`docs/plan/2026-06-09-implementation-m1-backend-auth.md`)의 Task 2부터 서브에이전트 기반으로 이어서 구현해줘"*
+2. 다음처럼 요청: *"M2(연락처 도메인 API) 계획을 세우고 구현해줘"* (M1 완료). 또는 위 "리뷰 보류 항목"을 먼저 처리.
 3. 핵심 환경 사실:
    - 빌드/테스트: `./gradlew test` (터널 ON 필수 — 통합 테스트가 `localhost:3306` 사용)
    - 통합 테스트 DB: `@DynamicPropertySource`로 URL만 `ysk_asan_test`, ddl-auto `create-drop`. 계정/비번은 `application-local.yml`(터널 비번) 그대로.
