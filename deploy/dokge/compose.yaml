@@ -1,0 +1,50 @@
+# ============================================================
+# Dockge 스택: ysk-asan 개발용 MariaDB
+# ------------------------------------------------------------
+# - Dockge: 이 파일을 스택의 compose.yaml 로 등록하고 .env 를 함께 둡니다.
+# - 로컬 개발: 이 디렉토리에서  docker compose up -d  로 동일하게 띄웁니다.
+# - 실제 비밀번호는 같은 디렉토리의 .env 에 작성합니다(.gitignore 처리됨).
+#   .env.example 을 복사해서 .env 를 만드세요:  cp .env.example .env
+# ============================================================
+
+services:
+  mariadb:
+    image: mariadb:11.4                      # LTS. 버전 변경 시 이 태그를 수정
+    container_name: ysk-asan-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-ysk_asan}
+      MARIADB_USER: ${MARIADB_USER:-ysk}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}
+    # 한글(이름·부서) 저장을 위해 utf8mb4 강제
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MARIADB_PORT:-3306}:3306"         # 로컬/개발 PC 에서 이 포트로 접속
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # DB를 눈으로 보며 작업하기 위한 가벼운 웹 UI (선택). 불필요하면 이 블록 삭제.
+  adminer:
+    image: adminer:4.8.1
+    container_name: ysk-asan-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mariadb
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"         # http://localhost:8081 로 접속
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
+    name: ysk-asan-mariadb-data

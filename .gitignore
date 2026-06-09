@@ -1,0 +1,63 @@
+# ===== 환경 변수 / 시크릿 (개인정보·자격증명 보호) =====
+.env
+.env.*
+!.env.example
+*.env
+deploy/**/.env
+application-local.yml
+application-local.yaml
+application-secret*.yml
+src/main/resources/application-local.yml
+secrets/
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# ===== 개인정보가 담길 수 있는 데이터 파일 =====
+# 연락처 등 개인정보가 들어갈 수 있는 형식은 기본 제외.
+# 개인정보 없는 샘플이 꼭 필요하면 !경로 로 개별 예외 처리할 것.
+*.xlsx
+*.xls
+*.csv
+*.hwp
+*.hwpx
+/data/
+/exports/
+/backup/
+
+# ===== Java / Gradle =====
+.gradle/
+build/
+bin/
+out/
+*.class
+*.log
+!gradle/wrapper/gradle-wrapper.jar
+
+# ===== Node / Frontend =====
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+*.local
+
+# ===== IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Docker / DB 데이터 볼륨 (호스트 바인드 시) =====
+deploy/**/data/
+mariadb_data/
