@@ -193,10 +193,14 @@ createdAt                         email       (not null)   # 이메일
   저장소에는 `.env.example`(예시 값)만 커밋한다.
 
 ### 개발 DB (Dockge + MariaDB)
-- 스택 파일: `deploy/dokge/compose.yaml` (MariaDB 11.4 + Adminer)
+- 스택 파일: `deploy/dokge/compose.yaml` (MariaDB 11.4 단일 서비스)
 - 환경 변수: `deploy/dokge/.env`(미추적), 템플릿은 `deploy/dokge/.env.example`
 - 기동: `cd deploy/dokge && cp .env.example .env && docker compose up -d`
 - 로컬 접속: `jdbc:mariadb://localhost:3306/ysk_asan`
-- DB 확인 UI: Adminer `http://localhost:8081` (서버 `mariadb`, 계정은 `.env` 값)
 - 개발/운영 모두 동일 MariaDB 사용 → H2 방언 차이로 인한 버그 예방
 - 백엔드 의존성: `org.mariadb.jdbc:mariadb-java-client`
+
+### 포트 사용 계획
+- MariaDB: `3306`
+- WAS(Spring Boot 애플리케이션): **`8181`** (`server.port=8181`)
+- Vite 개발 서버: `5173` → `/api` 요청을 `8181` 로 프록시

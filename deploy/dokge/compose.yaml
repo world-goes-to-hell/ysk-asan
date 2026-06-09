@@ -32,19 +32,6 @@ services:
       retries: 10
       start_period: 30s
 
-  # DB를 눈으로 보며 작업하기 위한 가벼운 웹 UI (선택). 불필요하면 이 블록 삭제.
-  adminer:
-    image: adminer:4.8.1
-    container_name: ysk-asan-adminer
-    restart: unless-stopped
-    environment:
-      ADMINER_DEFAULT_SERVER: mariadb
-    ports:
-      - "${ADMINER_PORT:-8081}:8080"         # http://localhost:8081 로 접속
-    depends_on:
-      mariadb:
-        condition: service_healthy
-
 volumes:
   mariadb_data:
     name: ysk-asan-mariadb-data
