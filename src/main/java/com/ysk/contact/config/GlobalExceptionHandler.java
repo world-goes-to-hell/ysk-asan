@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.ysk.contact.exception.ContactNotFoundException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,6 +26,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArg(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+    }
+
+    @ExceptionHandler(ContactNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNotFound(ContactNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
