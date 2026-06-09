@@ -3,9 +3,9 @@ package com.ysk.contact.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,12 +52,17 @@ public class AuthController {
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
 
+            // 세션 고정 공격 방어: 로그인 전 (익명) 세션이 있으면 무효화 후 새 세션 발급
+            HttpSession oldSession = httpRequest.getSession(false);
+            if (oldSession != null) {
+                oldSession.invalidate();
+            }
             HttpSession session = httpRequest.getSession(true);
             session.setAttribute(SPRING_SECURITY_CONTEXT_KEY, context);
 
             User user = userService.findByUsername(request.username());
             return ResponseEntity.ok(UserResponse.from(user));
-        } catch (BadCredentialsException e) {
+        } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }

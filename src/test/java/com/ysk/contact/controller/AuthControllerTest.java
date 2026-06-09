@@ -1,5 +1,6 @@
 package com.ysk.contact.controller;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -84,6 +85,27 @@ class AuthControllerTest extends IntegrationTest {
     @Test
     void me_withoutLogin_returns401() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logout_invalidatesSession_thenMeReturns401() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"erin\",\"password\":\"secret12\"}"))
+                .andExpect(status().isCreated());
+
+        var session = (org.springframework.mock.web.MockHttpSession) mockMvc.perform(
+                        post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"username\":\"erin\",\"password\":\"secret12\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/auth/me").session(session))
                 .andExpect(status().isUnauthorized());
     }
 }
