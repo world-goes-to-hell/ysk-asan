@@ -6,7 +6,27 @@
 
 **Architecture:** Spring Boot 3.2 레이어드(controller→service→repository→entity). Spring Security 세션 기반 + CSRF 쿠키 토큰, 비밀번호 BCrypt. 통합 테스트는 Testcontainers MariaDB로 운영과 동일한 DB에서 검증한다.
 
-**Tech Stack:** Java 17, Spring Boot 3.2.3 (web/data-jpa/security/validation), MariaDB 11.4, Lombok, JUnit5 + MockMvc + Testcontainers.
+**Tech Stack:** Java 17, Spring Boot 3.2.3 (web/data-jpa/security/validation), MariaDB 11.4, Lombok, JUnit5 + MockMvc.
+
+---
+
+> **⚠️ 환경 반영 변경(2026-06-09):** 로컬에 Docker가 없어 통합 테스트를 **Testcontainers 대신 SSH 터널 경유 개발서버 MariaDB의 `ysk_asan_test` 스키마**로 수행한다. 아래 Task 의 Testcontainers 관련 내용은 이 규칙으로 대체한다:
+> - `build.gradle` 에서 testcontainers 의존성 3개 제거(이미 반영됨).
+> - `IntegrationTest` 는 `@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")` 만 두고, 접속은 `src/test/resources/application-test.yml` 사용:
+>   ```yaml
+>   spring:
+>     datasource:
+>       url: jdbc:mariadb://localhost:3306/ysk_asan_test
+>       username: ${DB_USERNAME:ysk}
+>       password: ${DB_PASSWORD}
+>     jpa:
+>       hibernate:
+>         ddl-auto: create-drop
+>       show-sql: false
+>   ```
+> - 통합 테스트 실행 전제: `scripts/db-tunnel.ps1` 로 터널 ON + 환경변수 `DB_PASSWORD` 설정. 터널 OFF면 통합 테스트는 연결 실패.
+> - Gradle wrapper(8.6)는 이미 복사 완료 → `gradle wrapper` 생성 step 불필요.
+> - `application-test.yml` 은 비밀번호를 환경변수 참조만 하므로 커밋 가능(시크릿 없음).
 
 ---
 
@@ -110,9 +130,6 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:mariadb'
 }
 
 tasks.named('test') {

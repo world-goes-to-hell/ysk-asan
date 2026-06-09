@@ -11,6 +11,12 @@ import sys
 
 import pymysql
 
+# Windows cp949 콘솔에서 한글/기호 출력이 깨지거나 죽지 않도록 UTF-8 강제
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:  # noqa: BLE001
+    pass
+
 YML = "src/main/resources/application-local.yml"
 
 try:
@@ -53,7 +59,7 @@ try:
         host=host, port=port, user=user, password=pw, database=db, connect_timeout=8
     )
 except Exception as e:  # noqa: BLE001
-    print(f"❌ 연결 실패: {type(e).__name__}: {e}")
+    print(f"[FAIL] 연결 실패: {type(e).__name__}: {e}")
     print("   - 터널이 열려 있는지(scripts/db-tunnel.ps1), 포트/계정/비번/DB명을 확인하세요.")
     sys.exit(1)
 
