@@ -958,4 +958,25 @@ git push origin main
 **주의/리스크:**
 - CSRF: `/api/auth/**` 는 ignore라 테스트·초기 호출 단순. 그 외 `/api/**`(M2 Contact 변경 요청)은 CSRF 토큰 필요 → 프론트(M3)에서 `apiFetch`가 `X-XSRF-TOKEN` 첨부.
 - Testcontainers는 Docker 필수. CI/로컬에 Docker 없으면 통합 테스트 스킵 사유를 명시.
-- `gradle wrapper` 생성에 로컬 gradle 또는 IDE 필요(Task 1 Step 6).
+- `gradle wrapper` 생성에 로컬 gradle 또는 IDE 필요(Task 1 Step 6). → **이미 8.6 복사 완료**.
+
+---
+
+## 진행 상황 (2026-06-09)
+
+- [x] **환경 준비**: Java 17, Gradle wrapper 8.6, SSH 터널(`scripts/db-tunnel.ps1`), 테스트 스키마 `ysk_asan_test`(ysk 권한 부여 완료)
+- [x] **Task 1**: Spring Boot 부트스트랩 + 컨텍스트 로드 테스트 — 커밋 `cacdc80`, `./gradlew test` PASS(실 MariaDB 터널 연결 검증)
+- [ ] **Task 2**: User 엔티티 + UserRepository
+- [ ] **Task 3**: 보안 기반(BCrypt/UserDetailsService/SecurityConfig/예외핸들러)
+- [ ] **Task 4**: 회원가입 API
+- [ ] **Task 5**: 로그인/로그아웃/me
+- [ ] **Task 6**: 전체 테스트 + 수동 검증 + 마무리
+
+### 다음 세션에서 이어가는 법
+1. **터널 먼저 켜기**: PowerShell에서 `cd D:\DEV\WORKSPACE\PERSONAL\ysk-asan; .\scripts\db-tunnel.ps1` (SSH 비번)
+2. 다음처럼 요청: *"이 M1 계획(`docs/plan/2026-06-09-implementation-m1-backend-auth.md`)의 Task 2부터 서브에이전트 기반으로 이어서 구현해줘"*
+3. 핵심 환경 사실:
+   - 빌드/테스트: `./gradlew test` (터널 ON 필수 — 통합 테스트가 `localhost:3306` 사용)
+   - 통합 테스트 DB: `@DynamicPropertySource`로 URL만 `ysk_asan_test`, ddl-auto `create-drop`. 계정/비번은 `application-local.yml`(터널 비번) 그대로.
+   - Docker 없음 → Testcontainers 미사용.
+   - 실제 비밀번호/SSH 정보는 `application-local.yml`, `scripts/db-tunnel.ps1`(둘 다 `.gitignore`)에만. 절대 커밋 금지.
