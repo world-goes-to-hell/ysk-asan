@@ -1,0 +1,24 @@
+# ============================================================
+# 운영 profile (application-prod.yml)
+# ------------------------------------------------------------
+# WAS 를 MariaDB 와 같은 개발서버(Dockge)에 배포하고 도커 내부망으로 접속.
+# 모든 시크릿은 컨테이너 환경변수로 주입한다 (yml 엔 참조만).
+#   DB_HOST(기본 mariadb=compose 서비스명), DB_USERNAME, DB_PASSWORD 필수.
+# 최초 배포 시 빈 스키마면 DB_DDL_AUTO=update 로 1회 생성 후 기본값(validate)로 회귀.
+#   (장기적으로는 Flyway 도입 권장 — 그때 validate 고정)
+# ============================================================
+spring:
+  datasource:
+    url: "jdbc:mariadb://${DB_HOST:mariadb}:${DB_PORT:3306}/${DB_NAME:ysk_asan}?characterEncoding=UTF-8&connectionTimeZone=Asia/Seoul"
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      connection-timeout: 3000
+      maximum-pool-size: 10
+      max-lifetime: 1740000     # 29분: MariaDB wait_timeout 보다 짧게(끊긴 커넥션 재사용 방지)
+      keepalive-time: 300000
+  jpa:
+    hibernate:
+      # 운영 기본은 validate. 최초 배포 1회만 환경변수 DB_DDL_AUTO=update 로 스키마 생성.
+      ddl-auto: ${DB_DDL_AUTO:validate}
+    show-sql: false

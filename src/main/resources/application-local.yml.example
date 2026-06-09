@@ -1,0 +1,27 @@
+# ============================================================
+# 로컬 개발 profile 템플릿 (application-local.yml.example)
+# ------------------------------------------------------------
+# 복사해서 application-local.yml 로 사용하세요 (application-local.yml 은 git 제외):
+#   copy src\main\resources\application-local.yml.example src\main\resources\application-local.yml
+#
+# 비밀번호는 환경변수 DB_PASSWORD 사용을 권장합니다.
+# 로컬 편의로 application-local.yml 에 직접 적어도 되지만, 그 파일은 git 에
+# 올라가지 않으므로(.gitignore) 실제 비밀번호는 반드시 거기에만 두세요.
+# 터널 LocalPort 를 3306 외 값으로 쓰면 DB_PORT 환경변수로 맞추면 됩니다.
+# ============================================================
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:${DB_PORT:3306}/ysk_asan
+    username: ${DB_USERNAME:ysk}
+    password: ${DB_PASSWORD}      # 환경변수, 또는 application-local.yml 에 직접(git 제외)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug

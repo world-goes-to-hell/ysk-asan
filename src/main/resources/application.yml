@@ -1,0 +1,15 @@
+# ============================================================
+# 공통 설정 (모든 profile 공유)
+# - profile 별 DB 접속은 application-{profile}.yml 참고
+# - 활성 profile: 환경변수 SPRING_PROFILES_ACTIVE (미지정 시 local)
+# ============================================================
+spring:
+  application:
+    name: ysk-asan
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jpa:
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8181}   # WAS 포트

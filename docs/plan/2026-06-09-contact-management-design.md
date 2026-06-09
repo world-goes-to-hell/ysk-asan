@@ -44,7 +44,7 @@
   - 비밀번호: 단방향 **해싱**(분쇄기 — 복구 불가, 대조만 가능).
   - 연락처(이메일·이름): 화면 표시·복사가 필요하므로 평문으로 다루며, 저장 보호는 **인프라 레벨 at-rest 암호화**로 처리한다.
 - at-rest 암호화는 **코드가 아니라 운영 인프라에서 켜는 설정**이다.
-  개발 환경(H2 인메모리)에서는 해당 없음. 운영 MariaDB 배포 시 적용.
+  로컬·운영 모두 MariaDB 를 쓰므로, at-rest 암호화는 운영 MariaDB 인프라에만 적용.
 - 연락처 필드 자체를 암호문으로 저장하는 컬럼 레벨 암호화(AES)는 검색/부서탭과
   충돌(blind index 필요)하므로 이번 버전에서는 채택하지 않는다. (향후 보안 강화 옵션)
 
@@ -67,9 +67,9 @@ ysk-asan/
 │   ├── entity/      User, Contact
 │   └── dto/         RegisterRequest, LoginRequest, ContactRequest, ContactResponse, ...
 ├── src/main/resources/
-│   ├── application.yml                   # 공통
-│   ├── application-dev.yml               # 로컬 MariaDB(Dockge) 접속
-│   └── application-prod.yml              # MariaDB(환경변수)
+│   ├── application.yml                   # 공통(profile/포트)
+│   ├── application-local.yml             # 로컬: SSH 터널 경유 MariaDB
+│   └── application-prod.yml              # 운영: 도커 내부망 MariaDB
 └── frontend/                             # React + Vite
     └── src/
         ├── api/        client.js(apiFetch+CSRF), auth.js, contacts.js
@@ -195,9 +195,14 @@ createdAt                         email       (not null)   # 이메일
 ### 개발 DB (Dockge + MariaDB)
 - 스택 파일: `deploy/dokge/compose.yaml` (MariaDB 11.4 단일 서비스)
 - 환경 변수: `deploy/dokge/.env`(미추적), 템플릿은 `deploy/dokge/.env.example`
-- 기동: `cd deploy/dokge && cp .env.example .env && docker compose up -d`
-- 로컬 접속: `jdbc:mariadb://localhost:3306/ysk_asan`
-- 개발/운영 모두 동일 MariaDB 사용 → H2 방언 차이로 인한 버그 예방
+- 서버 기동(Dockge): `cd deploy/dokge && cp .env.example .env && docker compose up -d`
+- MariaDB 는 개발서버에서만 1개 운영, 데이터를 로컬·운영이 공유
+- 접속 구조(Spring profile 분리):
+  - **로컬(`local`)**: 로컬 PC 의 WAS → SSH 터널(로컬 3306) → 개발서버 MariaDB.
+    터널 스크립트 `scripts/db-tunnel.example.ps1`(복사해 사용). `jdbc:mariadb://localhost:3306/ysk_asan`
+  - **운영(`prod`)**: 개발서버의 WAS → 도커 내부망. `jdbc:mariadb://mariadb:3306/ysk_asan`
+  - 시크릿: DB 비밀번호는 환경변수 `DB_PASSWORD`(로컬 IDE/셸, 운영 컨테이너 env)
+- 로컬·운영 모두 동일 MariaDB 사용 → 서로 다른 DB(예: H2) 사용 시 생길 방언 차이를 예방
 - 백엔드 의존성: `org.mariadb.jdbc:mariadb-java-client`
 
 ### 포트 사용 계획
