@@ -4,9 +4,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 public abstract class IntegrationTest {
 
     // 통합 테스트는 SSH 터널 경유 개발서버 MariaDB 의 ysk_asan_test 스키마 사용.
