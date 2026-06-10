@@ -2,8 +2,13 @@ package com.ysk.contact.entity;
 
 import java.time.LocalDateTime;
 
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,6 +30,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(AuditingEntityListener.class) // createdBy/updatedBy 자동 주입(JpaAuditingConfig)
 // 복합 인덱스 (department, name): 검색 쿼리의 WHERE department= 와 ORDER BY department, name,
 // 그리고 부서 distinct 조회(선행 컬럼 department)를 함께 가속한다.
 // 이름/이메일 검색은 LIKE '%q%'(선행 와일드카드)라 B-tree 인덱스를 타지 못하므로 단독 인덱스를
@@ -54,6 +60,15 @@ public class Contact {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    // 변경 이력. nullable — 기능 도입 전 기존 행은 작성자를 알 수 없어 NULL 이 정직한 값(grandfather).
+    @CreatedBy
+    @Column(updatable = false, length = 30)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(length = 30)
+    private String updatedBy;
 
     @PrePersist
     protected void onCreate() {

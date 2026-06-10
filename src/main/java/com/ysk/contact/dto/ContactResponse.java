@@ -10,7 +10,9 @@ public record ContactResponse(
         String name,
         String email,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String createdBy,   // 변경 이력 도입 전 데이터는 null
+        String updatedBy
 ) {
     public static ContactResponse from(Contact contact) {
         return new ContactResponse(
@@ -19,6 +21,8 @@ public record ContactResponse(
                 contact.getName(),
                 contact.getEmail(),
                 contact.getCreatedAt(),
-                contact.getUpdatedAt());
+                contact.getUpdatedAt(),
+                contact.getCreatedBy(),
+                contact.getUpdatedBy());
     }
 }

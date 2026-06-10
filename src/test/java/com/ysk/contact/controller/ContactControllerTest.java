@@ -65,6 +65,40 @@ class ContactControllerTest extends IntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // ---------- 변경 이력(작성자/수정자) ----------
+
+    @Test
+    @WithMockUser(username = "kimwriter")
+    void create_recordsCreatedByAndUpdatedBy() throws Exception {
+        mockMvc.perform(post(BASE).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body("영업", "홍길동", "hong@ex.com")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.createdBy").value("kimwriter"))
+                .andExpect(jsonPath("$.updatedBy").value("kimwriter"));
+    }
+
+    @Test
+    void update_byDifferentUser_changesUpdatedBy_keepsCreatedBy() throws Exception {
+        // 요청별 인증(with(user)) 으로 작성자/수정자를 다른 사람으로 분리해 검증한다.
+        MvcResult created = mockMvc.perform(post(BASE)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.user("kimwriter"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body("영업", "홍길동", "hong@ex.com")))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long id = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(put(BASE + "/" + id)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.user("leeeditor"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body("개발", "홍길동", "hong@ex.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.createdBy").value("kimwriter"))   // 작성자 유지(updatable=false)
+                .andExpect(jsonPath("$.updatedBy").value("leeeditor")); // 수정자 갱신
+    }
+
     // ---------- CSV 내보내기 ----------
 
     @Test

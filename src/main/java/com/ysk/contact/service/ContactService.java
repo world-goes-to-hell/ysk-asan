@@ -50,6 +50,9 @@ public class ContactService {
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new ContactNotFoundException(id));
         contact.update(request.department(), request.name(), request.email());
+        // @PreUpdate(수정일)·AuditingEntityListener(수정자)는 flush 시점에 실행되므로,
+        // 응답 DTO 에 최신 updatedAt/updatedBy 가 실리도록 명시적으로 flush 한다.
+        contactRepository.flush();
         return ContactResponse.from(contact);
     }
 
