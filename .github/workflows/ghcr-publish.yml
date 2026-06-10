@@ -3,6 +3,11 @@ name: Build & Push to GHCR
 on:
   push:
     branches: [main]
+    # 이미지에 영향 없는 변경(문서·배포 매니페스트)만이면 빌드 스킵
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'deploy/**'
   workflow_dispatch:
 
 env:

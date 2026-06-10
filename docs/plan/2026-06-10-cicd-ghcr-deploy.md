@@ -43,9 +43,15 @@ git push main → Actions(ghcr-publish) → docker build(프론트+백엔드 단
 
 ## 진행 상황 (2026-06-10)
 - [x] Dockerfile + .dockerignore — 로컬 bootJar 단일 jar + static 포함 검증
-- [x] .github/workflows/ghcr-publish.yml
+- [x] .github/workflows/ghcr-publish.yml (+ docs/deploy 변경 시 빌드 스킵 paths-ignore)
 - [x] compose.prod.yaml + .env.example + 본 문서
-- [ ] 푸시 → Actions 빌드 GREEN + GHCR 이미지 확인
+- [x] **푸시 → Actions 빌드 GREEN(2m40s) + GHCR push 성공** — run 27247254150, 모든 스텝 ✓
+
+**✅ CI/CD 완료.** main 푸시 시 `ghcr.io/world-goes-to-hell/ysk-asan:latest`(+sha) 자동 생성.
+
+### 알려진 경고 / 후속
+- Actions 노드 deprecation: `actions/checkout@v4` 등이 Node 20 기반 — 2026-09 이후 제거 예정. 추후 액션 메이저 버전 업 필요(현재는 정상 동작).
+- 첫 배포 전: GHCR 패키지 가시성(private 기본) → public 전환 또는 개발서버 `docker login ghcr.io`(PAT `read:packages`).
 
 ## 범위 밖(향후)
 - 멀티아키(arm64), Flyway 마이그레이션, Actions→서버 SSH 자동 배포, 스테이징 환경, 이미지 취약점 스캔(Trivy)
