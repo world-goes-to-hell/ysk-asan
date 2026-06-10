@@ -1,6 +1,7 @@
 package com.ysk.contact.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.server.CookieSameSiteSupplier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,16 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    /**
+     * 서버가 내려보내는 모든 쿠키(JSESSIONID·remember-me·XSRF-TOKEN)에 SameSite=Lax 를 명시한다.
+     * same-origin SPA 라 Lax 로 충분하며 CSRF 토큰과 함께 이중 방어가 된다.
+     * (Strict 는 외부 링크로 진입 시 첫 요청에 쿠키가 빠져 로그아웃되는 UX 문제가 있어 제외)
+     */
+    @Bean
+    public CookieSameSiteSupplier cookieSameSiteSupplier() {
+        return CookieSameSiteSupplier.ofLax();
     }
 
     /**

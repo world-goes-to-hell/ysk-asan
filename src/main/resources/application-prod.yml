@@ -27,6 +27,10 @@ server:
   # 리버스 프록시(HTTPS 종단) 뒤 배포: X-Forwarded-* 를 반영해 https/원격IP 를 올바로 인식.
   # → request.isSecure()=true 가 되어 HSTS 응답 헤더와 Secure 쿠키 판정이 정상 동작.
   forward-headers-strategy: framework
+  servlet:
+    session:
+      # 유휴 세션 만료(업무일 1일). 이후엔 remember-me 쿠키가 있으면 자동 재인증.
+      timeout: 8h
 
 # 로그인 유지(Remember-Me): 운영은 키를 환경변수로 강제(미주입 시 부팅 실패=fail-fast). HTTPS 라 Secure 쿠키.
 remember-me:
