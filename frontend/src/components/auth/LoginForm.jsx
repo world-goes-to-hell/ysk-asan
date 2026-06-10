@@ -25,10 +25,11 @@ export default function LoginForm() {
       await login(username.trim(), password, rememberMe);
       navigate('/', { replace: true });
     } catch (err) {
+      // 서버가 사유별 메시지를 내려준다(승인 대기/계정 잠김/자격 오류). 바디 없는 응답만 일반화.
       setError(
-        err.status === 401
-          ? '사용자명 또는 비밀번호가 올바르지 않습니다.'
-          : err.message
+        err.message && !err.message.startsWith('요청 실패')
+          ? err.message
+          : '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.'
       );
     } finally {
       setSubmitting(false);

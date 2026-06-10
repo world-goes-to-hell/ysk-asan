@@ -26,7 +26,7 @@ export default function RegisterForm({ onSuccess }) {
     setError('');
     try {
       await register(username.trim(), password);
-      showToast('회원가입이 완료되었습니다. 로그인해 주세요.', 'success');
+      showToast('회원가입이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.', 'success');
       onSuccess?.();
     } catch (err) {
       // 서버 메시지(중복 username 409, 검증 400 등)를 그대로 노출한다.
