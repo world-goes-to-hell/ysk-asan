@@ -52,6 +52,9 @@ services:
       DB_PASSWORD: ${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}
       DB_DDL_AUTO: ${DB_DDL_AUTO:-validate}   # 최초 배포만 update, 이후 validate
       REMEMBER_ME_KEY: ${REMEMBER_ME_KEY:?set REMEMBER_ME_KEY in .env}  # 로그인 유지 토큰 서명 키
+      # 부트스트랩 관리자: 지정 계정을 기동 시 승인+ADMIN+잠금해제(멱등). 최초 관리자 지정 및
+      # 관리자 전원 잠금 시 break-glass. 빈값이면 스킵.
+      APP_BOOTSTRAP_ADMIN: ${APP_BOOTSTRAP_ADMIN:-}
       TZ: Asia/Seoul
     ports:
       - "${WAS_PORT:-8181}:8181"

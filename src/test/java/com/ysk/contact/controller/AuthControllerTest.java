@@ -45,7 +45,10 @@ class AuthControllerTest extends IntegrationTest {
     /** 가입 + 관리자 승인까지 완료(로그인 가능한 계정 — 대부분의 테스트 전제). */
     private void registerApproved(String username) throws Exception {
         register(username);
-        userRepository.findByUsername(username).orElseThrow().approve();
+        var user = userRepository.findByUsername(username).orElseThrow();
+        user.approve();
+        // 테스트 트랜잭션의 flush 타이밍에 의존하지 않도록 명시 저장.
+        userRepository.save(user);
     }
 
     @Test

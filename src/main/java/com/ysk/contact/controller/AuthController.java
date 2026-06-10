@@ -80,6 +80,8 @@ public class AuthController {
             return ResponseEntity.ok(UserResponse.from(user));
         } catch (LockedException e) {
             // 잠금/승인대기는 비밀번호 검사 전에 발생(DaoAuthenticationProvider pre-check) → 실패 카운트 제외.
+            // 사유별 메시지는 해당 계정의 존재를 노출하지만(enumeration), 승인제 알림이 요구사항인
+            // 사내툴 특성상 의도적으로 수용한다(미존재 계정은 BadCredentials 로 비노출 유지).
             return unauthorized("계정이 잠겨 있습니다. 관리자에게 잠금 해제를 요청하세요.");
         } catch (DisabledException e) {
             return unauthorized("관리자 승인 대기 중인 계정입니다. 승인 후 로그인할 수 있습니다.");

@@ -42,10 +42,10 @@ public class AdminBootstrapRunner implements ApplicationRunner {
         }
         userRepository.findByUsername(bootstrapAdminUsername).ifPresentOrElse(
                 user -> {
+                    // @Transactional 내 영속 엔티티 — dirty checking 으로 커밋 시 반영(save 불필요).
                     user.approve();
                     user.unlock();
                     user.changeRole(UserRole.ADMIN);
-                    userRepository.save(user);
                     log.info("부트스트랩 관리자 적용 완료(승인·ADMIN·잠금해제): {}", bootstrapAdminUsername);
                 },
                 // 가입 전이면 스킵 — 가입 후 재기동하면 적용된다.

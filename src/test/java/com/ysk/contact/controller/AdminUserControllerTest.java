@@ -44,7 +44,10 @@ class AdminUserControllerTest extends IntegrationTest {
     /** 가입 + 승인. */
     private long registerApproved(String username) throws Exception {
         long id = register(username);
-        userRepository.findByUsername(username).orElseThrow().approve();
+        var user = userRepository.findByUsername(username).orElseThrow();
+        user.approve();
+        // 테스트 트랜잭션의 flush 타이밍에 의존하지 않도록 명시 저장.
+        userRepository.save(user);
         return id;
     }
 
@@ -63,6 +66,7 @@ class AdminUserControllerTest extends IntegrationTest {
         var admin = userRepository.findByUsername(username).orElseThrow();
         admin.approve();
         admin.changeRole(UserRole.ADMIN);
+        userRepository.save(admin);
         return login(username);
     }
 
@@ -179,6 +183,18 @@ class AdminUserControllerTest extends IntegrationTest {
 
         assertThat(userRepository.findByUsername("promotee").orElseThrow().getRole())
                 .isEqualTo(UserRole.ADMIN);
+    }
+
+    @Test
+    void changeRole_invalidRole_returns400() throws Exception {
+        MockHttpSession session = adminSession("boss7");
+        long targetId = registerApproved("victim");
+
+        // 정의되지 않은 enum 은 역직렬화(HttpMessageNotReadable) 단계에서 400.
+        mockMvc.perform(patch(BASE + "/" + targetId + "/role").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"role\":\"SUPERADMIN\"}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
