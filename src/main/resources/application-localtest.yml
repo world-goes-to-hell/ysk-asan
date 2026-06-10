@@ -1,0 +1,22 @@
+# ============================================================
+# 로컬 수동 실행/검증 전용 보조 profile (application-localtest.yml)
+# ------------------------------------------------------------
+# local 프로파일과 "함께" 활성화한다 — 계정/비번은 local 의 값을 그대로 쓰고,
+# 스키마만 실 공유 ysk_asan → ysk_asan_test 로 덮는다.
+#
+#   ./gradlew bootRun --args='--spring.profiles.active=local,localtest'
+#   또는  $env:SPRING_PROFILES_ACTIVE="local,localtest"; ./gradlew bootRun
+#
+# 목적: 손으로 앱을 띄워 화면/기능을 검증할 때, 실 공유 스키마(ysk_asan)에
+#       계정·연락처 더미가 쌓이지 않도록 격리한다.
+# 전제: ysk_asan_test 스키마가 존재하고 ysk 계정에 권한이 있어야 함
+#       (없으면  python scripts/db_init_test.py  로 1회 준비, 터널 ON 상태).
+# 주의: 자동 통합 테스트(./gradlew test)도 같은 ysk_asan_test 를 create-drop 으로
+#       쓰므로, 테스트를 돌리면 이 수동 데이터는 사라진다(검증용이라 무방).
+# ============================================================
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:3306/ysk_asan_test
+  jpa:
+    hibernate:
+      ddl-auto: update
