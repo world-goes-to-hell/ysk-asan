@@ -1,11 +1,27 @@
-// 부트스트랩 골격. 라우팅/Provider 는 후속 Task(인증·레이아웃·연락처)에서 확장된다.
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+
+import AuthPage from './components/auth/AuthPage';
+import { useAuth } from './contexts/AuthContext';
+
+function RequireAuth() {
+  const { currentUser, loading } = useAuth();
+  if (loading) return null; // 세션 확인 중 로그인 화면 깜빡임 방지
+  if (!currentUser) return <Navigate to="/login" replace />;
+  return <Outlet />;
+}
+
 export default function App() {
   return (
-    <div style={{ padding: 'var(--space-6, 32px)' }}>
-      <h1>수신처 관리</h1>
-      <p style={{ color: 'var(--text-secondary, #5e6470)' }}>
-        프론트엔드 부트스트랩 완료. 인증·연락처 화면은 후속 단계에서 구현됩니다.
-      </p>
-    </div>
+    <Routes>
+      <Route path="/login" element={<AuthPage />} />
+      <Route element={<RequireAuth />}>
+        {/* 레이아웃/대시보드/연락처는 후속 Task 에서 채운다. */}
+        <Route
+          path="/"
+          element={<div style={{ padding: 'var(--space-6)' }}>로그인되었습니다. (레이아웃은 다음 단계)</div>}
+        />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
