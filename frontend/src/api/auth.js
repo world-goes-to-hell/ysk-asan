@@ -13,6 +13,11 @@ const authAPI = {
       body: JSON.stringify({ username, password }),
     }),
   logout: () => apiFetch('/api/auth/logout', { method: 'POST' }),
+  changePassword: (currentPassword, newPassword) =>
+    apiFetch('/api/auth/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 export default authAPI;

@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext';
+import PasswordChangeDialog from '../auth/PasswordChangeDialog';
 import styles from '../../styles/layout.module.css';
 
 export default function Header() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [pwOpen, setPwOpen] = useState(false);
 
   const onLogout = async () => {
     await logout();
@@ -25,10 +28,14 @@ export default function Header() {
       </div>
       <div className={styles.headerRight}>
         {currentUser && <span className={styles.user}>{currentUser.username}</span>}
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPwOpen(true)}>
+          비밀번호 변경
+        </button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onLogout}>
           로그아웃
         </button>
       </div>
+      {pwOpen && <PasswordChangeDialog onClose={() => setPwOpen(false)} />}
     </header>
   );
 }

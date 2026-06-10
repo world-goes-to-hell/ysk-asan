@@ -197,6 +197,18 @@ class AuthControllerTest extends IntegrationTest {
     }
 
     @Test
+    void changePassword_withoutCsrfToken_returns403() throws Exception {
+        // 이 엔드포인트가 CSRF ignore 목록(register/login)에 실수로 추가되는 것에 대한 회귀 가드.
+        registerApproved("pwcsrf");
+        MockHttpSession session = loginSession("pwcsrf", "secret12");
+
+        mockMvc.perform(post("/api/auth/password").session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"secret12\",\"newPassword\":\"newsecret34\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void changePassword_unauthenticated_returns401() throws Exception {
         mockMvc.perform(post("/api/auth/password").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
