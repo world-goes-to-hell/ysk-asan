@@ -83,6 +83,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/assets/**", "/", "/index.html", "/favicon.ico").permitAll()
+                        // 회원 관리는 ADMIN 전용(보다 구체적인 규칙이라 /api/** 앞에 선언).
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
