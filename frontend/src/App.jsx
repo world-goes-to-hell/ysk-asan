@@ -1,6 +1,8 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 
 import AuthPage from './components/auth/AuthPage';
+import AppLayout from './components/layout/AppLayout';
+import DashboardPage from './components/dashboard/DashboardPage';
 import { useAuth } from './contexts/AuthContext';
 
 function RequireAuth() {
@@ -15,11 +17,14 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<AuthPage />} />
       <Route element={<RequireAuth />}>
-        {/* 레이아웃/대시보드/연락처는 후속 Task 에서 채운다. */}
-        <Route
-          path="/"
-          element={<div style={{ padding: 'var(--space-6)' }}>로그인되었습니다. (레이아웃은 다음 단계)</div>}
-        />
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          {/* 연락처 화면은 다음 Task 에서 ContactsPage 로 교체 */}
+          <Route
+            path="contacts"
+            element={<div>연락처 관리 (다음 단계에서 구현)</div>}
+          />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
