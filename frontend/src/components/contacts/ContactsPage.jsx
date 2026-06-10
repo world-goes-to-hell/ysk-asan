@@ -38,6 +38,12 @@ export default function ContactsPage() {
 
   const visibleIds = useMemo(() => visible.map((c) => c.id), [visible]);
 
+  // 이메일 자동완성용: 캐시된 연락처들의 이메일(부서를 가로질러 누적)
+  const knownEmails = useMemo(
+    () => [...contactsById.values()].map((c) => c.email),
+    [contactsById]
+  );
+
   // 부서 탭 전환: 검색어는 초기화하되 선택(수신처 누적)은 유지.
   const onSelectDept = (dept) => {
     setActiveDept(dept);
@@ -106,7 +112,7 @@ export default function ContactsPage() {
         />
       </div>
 
-      <ContactAddForm onAdd={onAdd} />
+      <ContactAddForm onAdd={onAdd} departments={departments} knownEmails={knownEmails} />
 
       <DepartmentTabs departments={departments} active={activeDept} onSelect={onSelectDept} />
 

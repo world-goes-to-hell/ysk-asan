@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import AutocompleteInput from '../common/AutocompleteInput';
+import { departmentSuggestions, emailSuggestions } from '../../utils/suggestions';
 import styles from '../../styles/contacts.module.css';
 
-export default function ContactAddForm({ onAdd }) {
+export default function ContactAddForm({ onAdd, departments = [], knownEmails = [] }) {
   const [department, setDepartment] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,11 +32,11 @@ export default function ContactAddForm({ onAdd }) {
 
   return (
     <form className={styles.addForm} onSubmit={onSubmit}>
-      <input
-        className="form-input"
-        placeholder="부서"
+      <AutocompleteInput
         value={department}
-        onChange={(e) => setDepartment(e.target.value)}
+        onChange={setDepartment}
+        getSuggestions={(v) => departmentSuggestions(v, departments)}
+        placeholder="부서"
         aria-label="부서"
       />
       <input
@@ -44,12 +46,12 @@ export default function ContactAddForm({ onAdd }) {
         onChange={(e) => setName(e.target.value)}
         aria-label="이름"
       />
-      <input
-        className="form-input"
+      <AutocompleteInput
+        value={email}
+        onChange={setEmail}
+        getSuggestions={(v) => emailSuggestions(v, knownEmails)}
         type="email"
         placeholder="이메일"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
         aria-label="이메일"
       />
       <button type="submit" className="btn btn-primary" disabled={submitting}>
