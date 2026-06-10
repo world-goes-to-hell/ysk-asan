@@ -16,6 +16,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.ysk.contact.repository.UserRepository;
 import com.ysk.contact.support.IntegrationTest;
 
 import jakarta.servlet.http.Cookie;
@@ -24,6 +25,28 @@ class AuthControllerTest extends IntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    UserRepository userRepository;
+
+    /** 가입 요청 본문. */
+    private String credentials(String username, String password) {
+        return "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+    }
+
+    /** 가입만 수행(승인 대기 상태). */
+    private void register(String username) throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials(username, "secret12")))
+                .andExpect(status().isCreated());
+    }
+
+    /** 가입 + 관리자 승인까지 완료(로그인 가능한 계정 — 대부분의 테스트 전제). */
+    private void registerApproved(String username) throws Exception {
+        register(username);
+        userRepository.findByUsername(username).orElseThrow().approve();
+    }
 
     @Test
     void register_success() throws Exception {
@@ -77,10 +100,7 @@ class AuthControllerTest extends IntegrationTest {
 
     @Test
     void login_then_me_success() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"carol\",\"password\":\"secret12\"}"))
-                .andExpect(status().isCreated());
+        registerApproved("carol");
 
         var session = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,15 +117,13 @@ class AuthControllerTest extends IntegrationTest {
 
     @Test
     void login_wrongPassword_returns401() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"dave\",\"password\":\"secret12\"}"))
-                .andExpect(status().isCreated());
+        registerApproved("dave");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"dave\",\"password\":\"wrongpass\"}"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -116,10 +134,7 @@ class AuthControllerTest extends IntegrationTest {
 
     @Test
     void logout_invalidatesSession_thenMeReturns401() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"erin\",\"password\":\"secret12\"}"))
-                .andExpect(status().isCreated());
+        registerApproved("erin");
 
         var session = (org.springframework.mock.web.MockHttpSession) mockMvc.perform(
                         post("/api/auth/login")
@@ -135,18 +150,90 @@ class AuthControllerTest extends IntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ---------- 로그인 유지(Remember-Me) ----------
+    // ---------- 승인제 + 로그인 실패 잠금 ----------
 
-    private void register(String username) throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+    @Test
+    void login_unapproved_returns401WithPendingMessage() throws Exception {
+        register("pending1"); // 승인 없이 가입만
+
+        mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"" + username + "\",\"password\":\"secret12\"}"))
-                .andExpect(status().isCreated());
+                        .content(credentials("pending1", "secret12")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("승인")));
     }
 
     @Test
+    void login_fiveWrongPasswords_locksAccount() throws Exception {
+        registerApproved("lockme");
+
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(credentials("lockme", "wrongpass")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // 잠긴 뒤에는 올바른 비밀번호로도 로그인 불가 + 잠금 안내.
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials("lockme", "secret12")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("잠")));
+
+        var user = userRepository.findByUsername("lockme").orElseThrow();
+        assertThat(user.isLocked()).isTrue();
+        assertThat(user.getFailedLoginAttempts()).isEqualTo(5);
+    }
+
+    @Test
+    void login_failureCounter_resetsOnSuccess() throws Exception {
+        registerApproved("almostlock");
+
+        for (int i = 0; i < 4; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(credentials("almostlock", "wrongpass")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials("almostlock", "secret12")))
+                .andExpect(status().isOk());
+
+        var user = userRepository.findByUsername("almostlock").orElseThrow();
+        assertThat(user.isLocked()).isFalse();
+        assertThat(user.getFailedLoginAttempts()).isZero();
+    }
+
+    @Test
+    void lockedAccount_rememberMeCookie_rejected() throws Exception {
+        registerApproved("rmlocked");
+
+        Cookie rm = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"rmlocked\",\"password\":\"secret12\",\"rememberMe\":true}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getCookie("remember-me");
+
+        // 5회 실패로 잠금 — 기존 remember-me 쿠키도 AccountStatusUserDetailsChecker 가 거부해야 한다.
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(credentials("rmlocked", "wrongpass")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(get("/api/auth/me").cookie(rm))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ---------- 로그인 유지(Remember-Me) ----------
+
+    @Test
     void login_withRememberMe_setsRememberMeCookie() throws Exception {
-        register("rmcookie");
+        registerApproved("rmcookie");
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,7 +250,7 @@ class AuthControllerTest extends IntegrationTest {
 
     @Test
     void rememberMeCookie_authenticatesWithoutSession() throws Exception {
-        register("rmonly");
+        registerApproved("rmonly");
 
         Cookie rm = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -179,7 +266,7 @@ class AuthControllerTest extends IntegrationTest {
 
     @Test
     void login_withoutRememberMe_noCookie() throws Exception {
-        register("normemb");
+        registerApproved("normemb");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -190,7 +277,7 @@ class AuthControllerTest extends IntegrationTest {
 
     @Test
     void logout_clearsRememberMeCookie() throws Exception {
-        register("rmlogout");
+        registerApproved("rmlogout");
 
         MvcResult login = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

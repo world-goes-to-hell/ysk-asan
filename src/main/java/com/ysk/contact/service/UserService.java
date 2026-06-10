@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ysk.contact.entity.User;
+import com.ysk.contact.entity.UserRole;
 import com.ysk.contact.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+    /** 이 횟수만큼 연속으로 비밀번호를 틀리면 계정이 잠긴다(관리자 해제 필요). */
+    public static final int MAX_LOGIN_FAILURES = 5;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -24,6 +28,8 @@ public class UserService {
         User user = User.builder()
                 .username(username)
                 .password(passwordEncoder.encode(rawPassword))
+                .role(UserRole.USER)
+                .approved(false)    // 승인제: 관리자 승인 전 로그인 불가
                 .build();
         return userRepository.save(user);
     }
@@ -32,5 +38,26 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+    }
+
+    /**
+     * 비밀번호 오류를 기록한다. 계정이 없으면 조용히 무시한다
+     * (BadCredentials 는 미존재 계정도 동일하게 발생 — 존재 여부 노출 방지).
+     *
+     * @return 이번 실패로 계정이 잠겼으면 true
+     */
+    @Transactional
+    public boolean recordLoginFailure(String username) {
+        return userRepository.findByUsername(username)
+                .map(user -> user.recordLoginFailure(MAX_LOGIN_FAILURES))
+                .orElse(false);
+    }
+
+    /** 로그인 성공 시 실패 카운터 초기화(0이면 불필요한 쓰기 생략). */
+    @Transactional
+    public void resetLoginFailures(String username) {
+        userRepository.findByUsername(username)
+                .filter(user -> user.getFailedLoginAttempts() > 0)
+                .ifPresent(User::resetLoginFailures);
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.ysk.contact.exception.ContactNotFoundException;
+import com.ysk.contact.exception.UserNotFoundException;
 
 /**
  * 전역 예외 처리. {@link ResponseEntityExceptionHandler} 를 상속해 Spring MVC 표준 예외
@@ -51,6 +52,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ContactNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ContactNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
     }
 

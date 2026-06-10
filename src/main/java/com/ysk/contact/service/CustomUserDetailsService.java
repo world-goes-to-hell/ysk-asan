@@ -26,10 +26,16 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-        );
+        // disabled/accountLocked 는 DaoAuthenticationProvider 가 비밀번호 검사 "이전"에 확인해
+        // DisabledException(승인 대기)/LockedException(잠금) 으로 변환한다.
+        // Remember-Me 쿠키 소비 시에도 AccountStatusUserDetailsChecker 가 동일하게 거부한다.
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(Collections.singletonList(
+                        new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
+                .disabled(!user.isApproved())
+                .accountLocked(user.isLocked())
+                .build();
     }
 }

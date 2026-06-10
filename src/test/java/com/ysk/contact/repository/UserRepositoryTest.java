@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ysk.contact.entity.User;
+import com.ysk.contact.entity.UserRole;
 import com.ysk.contact.support.IntegrationTest;
 
 class UserRepositoryTest extends IntegrationTest {
@@ -15,7 +16,8 @@ class UserRepositoryTest extends IntegrationTest {
 
     @Test
     void savesAndFindsByUsername() {
-        userRepository.save(User.builder().username("alice").password("hash").build());
+        userRepository.save(User.builder()
+                .username("alice").password("hash").role(UserRole.USER).build());
 
         assertThat(userRepository.findByUsername("alice")).isPresent();
         assertThat(userRepository.existsByUsername("alice")).isTrue();

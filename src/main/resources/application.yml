@@ -18,3 +18,8 @@ server:
 remember-me:
   key: ${REMEMBER_ME_KEY:local-dev-remember-me-key}
   secure-cookie: false        # http 로컬: false. 운영(https)은 application-prod 에서 true
+
+app:
+  # 부트스트랩 관리자: 지정 계정을 기동 시 승인+ADMIN+잠금해제(멱등). 빈값이면 스킵.
+  # 최초 관리자 지정(닭-달걀) 및 관리자 전원 잠금 시 break-glass 용도.
+  bootstrap-admin: ${APP_BOOTSTRAP_ADMIN:}

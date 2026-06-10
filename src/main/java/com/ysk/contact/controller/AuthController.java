@@ -1,8 +1,13 @@
 package com.ysk.contact.controller;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -46,9 +51,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request,
-                                              HttpServletRequest httpRequest,
-                                              HttpServletResponse httpResponse) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
+                                   HttpServletRequest httpRequest,
+                                   HttpServletResponse httpResponse) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.username(), request.password()));
@@ -70,11 +75,27 @@ public class AuthController {
                 rememberMeServices.loginSuccess(httpRequest, httpResponse, authentication);
             }
 
+            userService.resetLoginFailures(request.username());
             User user = userService.findByUsername(request.username());
             return ResponseEntity.ok(UserResponse.from(user));
+        } catch (LockedException e) {
+            // 잠금/승인대기는 비밀번호 검사 전에 발생(DaoAuthenticationProvider pre-check) → 실패 카운트 제외.
+            return unauthorized("계정이 잠겨 있습니다. 관리자에게 잠금 해제를 요청하세요.");
+        } catch (DisabledException e) {
+            return unauthorized("관리자 승인 대기 중인 계정입니다. 승인 후 로그인할 수 있습니다.");
+        } catch (BadCredentialsException e) {
+            // 존재하지 않는 계정도 BadCredentials 로 동일 처리됨(존재 여부 비노출) — 카운트는 실계정만.
+            boolean lockedNow = userService.recordLoginFailure(request.username());
+            return unauthorized(lockedNow
+                    ? "비밀번호 " + UserService.MAX_LOGIN_FAILURES + "회 오류로 계정이 잠겼습니다. 관리자에게 문의하세요."
+                    : "사용자명 또는 비밀번호가 올바르지 않습니다.");
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return unauthorized("사용자명 또는 비밀번호가 올바르지 않습니다.");
         }
+    }
+
+    private ResponseEntity<Map<String, String>> unauthorized(String message) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", message));
     }
 
     @PostMapping("/logout")
