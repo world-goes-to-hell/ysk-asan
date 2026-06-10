@@ -118,7 +118,7 @@ createdAt                         email       (not null)   # 이메일
 | GET | `/api/contacts/departments` | 부서 탭 목록(distinct) | 필요 |
 | POST | `/api/contacts` | 연락처 추가 | 필요 |
 | PUT | `/api/contacts/{id}` | 연락처 수정(오타 보정) | 필요 |
-| DELETE | `/api/contacts?ids=1,2,3` | 선택 항목 일괄 삭제 | 필요 |
+| DELETE | `/api/contacts?ids=1&ids=2&ids=3` | 선택 항목 일괄 삭제(repeated 파라미터) | 필요 |
 
 - 응답 형식: 일관된 envelope 또는 단순 DTO. (kanban-board 패턴에 맞춰 단순 DTO 채택)
 - 에러: `GlobalExceptionHandler`에서 `{ message }` 형태로 통일, 검증 실패는 400.
