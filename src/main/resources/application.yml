@@ -10,6 +10,11 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   jpa:
     open-in-view: false
+  servlet:
+    multipart:
+      # CSV 가져오기 업로드 한도(텍스트 5천 행이면 충분)
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 server:
   port: ${SERVER_PORT:8181}   # WAS 포트

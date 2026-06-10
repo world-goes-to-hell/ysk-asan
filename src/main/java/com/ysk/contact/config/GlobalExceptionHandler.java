@@ -16,6 +16,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.ysk.contact.exception.ContactNotFoundException;
+import com.ysk.contact.exception.CsvImportException;
 import com.ysk.contact.exception.UserNotFoundException;
 
 /**
@@ -58,6 +59,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+    }
+
+    /** CSV 가져오기 검증 실패 — all-or-nothing 거부 + 행별 오류 목록. */
+    @ExceptionHandler(CsvImportException.class)
+    public ResponseEntity<Map<String, Object>> handleCsvImport(CsvImportException e) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("message", e.getMessage(), "errors", e.getErrors()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -20,8 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import com.ysk.contact.dto.ContactRequest;
 import com.ysk.contact.dto.ContactResponse;
+import com.ysk.contact.service.ContactImportService;
 import com.ysk.contact.service.ContactService;
 
 import jakarta.validation.Valid;
@@ -33,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class ContactController {
 
     private final ContactService contactService;
+    private final ContactImportService contactImportService;
 
     @GetMapping
     public ResponseEntity<List<ContactResponse>> list(
@@ -61,6 +65,12 @@ public class ContactController {
     @PostMapping
     public ResponseEntity<ContactResponse> create(@Valid @RequestBody ContactRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(contactService.create(request));
+    }
+
+    /** CSV 일괄 가져오기(내보내기 포맷과 라운드트립). 오류 행이 있으면 전체 거부(400 + 행별 오류). */
+    @PostMapping("/import")
+    public ResponseEntity<Map<String, Integer>> importCsv(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(Map.of("imported", contactImportService.importCsv(file)));
     }
 
     @PutMapping("/{id}")
