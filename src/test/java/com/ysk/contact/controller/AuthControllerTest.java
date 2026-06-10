@@ -56,6 +56,16 @@ class AuthControllerTest extends IntegrationTest {
     }
 
     @Test
+    void malformedJson_returns400_not500() throws Exception {
+        // ResponseEntityExceptionHandler 상속으로 Spring MVC 표준 예외(HttpMessageNotReadable)가
+        // 500 으로 변질되지 않고 4xx 로 유지되는지에 대한 회귀 가드.
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{not valid json"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void login_then_me_success() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
