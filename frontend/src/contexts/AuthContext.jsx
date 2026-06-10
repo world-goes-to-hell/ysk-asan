@@ -33,8 +33,8 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('session-expired', onExpired);
   }, [showToast]);
 
-  const login = useCallback(async (username, password) => {
-    const user = await authAPI.login(username, password);
+  const login = useCallback(async (username, password, rememberMe = false) => {
+    const user = await authAPI.login(username, password, rememberMe);
     setCurrentUser(user);
     return user;
   }, []);

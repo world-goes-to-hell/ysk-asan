@@ -22,3 +22,8 @@ spring:
       # 운영 기본은 validate. 최초 배포 1회만 환경변수 DB_DDL_AUTO=update 로 스키마 생성.
       ddl-auto: ${DB_DDL_AUTO:validate}
     show-sql: false
+
+# 로그인 유지(Remember-Me): 운영은 키를 환경변수로 강제(미주입 시 부팅 실패=fail-fast). HTTPS 라 Secure 쿠키.
+remember-me:
+  key: ${REMEMBER_ME_KEY}
+  secure-cookie: true

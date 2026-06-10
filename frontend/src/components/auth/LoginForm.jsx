@@ -9,6 +9,7 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +22,7 @@ export default function LoginForm() {
     setSubmitting(true);
     setError('');
     try {
-      await login(username.trim(), password);
+      await login(username.trim(), password, rememberMe);
       navigate('/', { replace: true });
     } catch (err) {
       setError(
@@ -58,6 +59,14 @@ export default function LoginForm() {
           autoComplete="current-password"
         />
       </div>
+      <label className={styles.rememberRow}>
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+        />
+        로그인 상태 유지
+      </label>
       {error && <p className={styles.error}>{error}</p>}
       <button type="submit" className="btn btn-primary btn-full" disabled={submitting}>
         {submitting ? '로그인 중…' : '로그인'}

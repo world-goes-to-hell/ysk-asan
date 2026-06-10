@@ -51,6 +51,7 @@ services:
       DB_USERNAME: ${MARIADB_USER:-ysk}
       DB_PASSWORD: ${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}
       DB_DDL_AUTO: ${DB_DDL_AUTO:-validate}   # 최초 배포만 update, 이후 validate
+      REMEMBER_ME_KEY: ${REMEMBER_ME_KEY:?set REMEMBER_ME_KEY in .env}  # 로그인 유지 토큰 서명 키
       TZ: Asia/Seoul
     ports:
       - "${WAS_PORT:-8181}:8181"

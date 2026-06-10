@@ -13,3 +13,8 @@ spring:
 
 server:
   port: ${SERVER_PORT:8181}   # WAS 포트
+
+# 로그인 유지(Remember-Me) 토큰 서명 키. 로컬 기본값 제공, 운영은 환경변수 REMEMBER_ME_KEY 필수(application-prod).
+remember-me:
+  key: ${REMEMBER_ME_KEY:local-dev-remember-me-key}
+  secure-cookie: false        # http 로컬: false. 운영(https)은 application-prod 에서 true
