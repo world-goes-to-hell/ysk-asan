@@ -19,9 +19,17 @@
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--accent-deep);
+}
+
+.brandMark {
+  display: inline-flex;
 }
 
 .headerRight {
@@ -65,6 +73,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--text-secondary);
+  white-space: nowrap;
   transition: background var(--dur-fast) var(--ease-out),
               color var(--dur-fast) var(--ease-out);
 }
@@ -78,6 +87,7 @@
 .navItemActive:hover {
   background: var(--accent-soft);
   color: var(--accent);
+  font-weight: 600;
 }
 
 .navIcon {

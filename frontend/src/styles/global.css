@@ -1,7 +1,7 @@
 /* =====================================================
    수신처 관리 — global.css
    Aesthetic: Light Minimal (사내 업무용)
-   - 화이트/뉴트럴 배경 + 단일 액센트(인디고), 명확한 타이포 위계, 절제된 그림자
+   - 화이트/뉴트럴 배경 + 서울아산병원 메디컬 블루·그린 액센트, 명확한 타이포 위계, 절제된 그림자
    Font: Noto Sans KR
    ===================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -10,16 +10,22 @@
 
 :root {
   /* Surface */
-  --bg-page:    #f7f8fa;
+  --bg-page:    #f4f7fb;
   --bg-card:    #ffffff;
   --bg-subtle:  #f3f4f6;
   --bg-overlay: rgba(17, 24, 39, 0.45);
 
-  /* Accent (단일) */
-  --accent:        #4f46e5;
-  --accent-hover:  #4338ca;
-  --accent-soft:   #eef2ff;
+  /* Accent — 서울아산병원 메디컬 블루 */
+  --accent:        #0067a8;
+  --accent-hover:  #00557f;
+  --accent-soft:   #e4f0f8;
   --accent-text:   #ffffff;
+  --accent-deep:   #0d3b5e;    /* 딥 네이비 — 타이틀·강조 */
+
+  /* Secondary — 아산 그린(생명·회복 포인트) */
+  --accent-2:       #5fa828;
+  --accent-2-hover: #4f8e21;
+  --accent-2-soft:  #eef6e2;
 
   /* Text */
   --text-primary:   #1a1d23;
@@ -61,7 +67,7 @@
 
   /* Layout */
   --header-height: 56px;
-  --sidebar-width: 232px;
+  --sidebar-width: 240px;
 }
 
 html { font-size: 15px; }
