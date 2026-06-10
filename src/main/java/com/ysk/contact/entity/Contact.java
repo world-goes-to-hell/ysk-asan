@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -24,7 +25,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "contact")
+// 복합 인덱스 (department, name): 검색 쿼리의 WHERE department= 와 ORDER BY department, name,
+// 그리고 부서 distinct 조회(선행 컬럼 department)를 함께 가속한다.
+// 이름/이메일 검색은 LIKE '%q%'(선행 와일드카드)라 B-tree 인덱스를 타지 못하므로 단독 인덱스를
+// 두지 않는다. 데이터가 커지면 풀텍스트 인덱스(MATCH ... AGAINST)로 전환 검토.
+// 주의: prod(ddl-auto=validate)는 인덱스를 검사/생성하지 않으므로, 운영 DB에는 최초 update 또는
+// 수동(ALTER TABLE contact ADD INDEX ...) 적용이 필요하다(Flyway 도입 시 일원화 — Tier 3).
+@Table(name = "contact", indexes = {
+        @Index(name = "idx_contact_dept_name", columnList = "department, name")
+})
 public class Contact {
 
     @Id
