@@ -42,11 +42,15 @@ export default function RegisterForm({ onSuccess }) {
         <label className="form-label" htmlFor="reg-username">사용자명</label>
         <input
           id="reg-username"
+          type="text"
           className="form-input"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
           placeholder="3~30자"
+          required
+          minLength={3}
+          maxLength={30}
           autoFocus
         />
       </div>
@@ -60,6 +64,9 @@ export default function RegisterForm({ onSuccess }) {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
           placeholder="8~72자"
+          required
+          minLength={8}
+          maxLength={72}
         />
       </div>
       {error && <p className={styles.error}>{error}</p>}

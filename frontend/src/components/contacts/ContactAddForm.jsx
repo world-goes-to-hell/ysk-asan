@@ -38,13 +38,18 @@ export default function ContactAddForm({ onAdd, departments = [], knownEmails = 
         getSuggestions={(v) => departmentSuggestions(v, departments)}
         placeholder="부서"
         aria-label="부서"
+        required
+        maxLength={100}
       />
       <input
         className="form-input"
+        type="text"
         placeholder="이름"
         value={name}
         onChange={(e) => setName(e.target.value)}
         aria-label="이름"
+        required
+        maxLength={100}
       />
       <AutocompleteInput
         value={email}
@@ -53,6 +58,8 @@ export default function ContactAddForm({ onAdd, departments = [], knownEmails = 
         type="email"
         placeholder="이메일"
         aria-label="이메일"
+        required
+        maxLength={255}
       />
       <button type="submit" className="btn btn-primary" disabled={submitting}>
         {submitting ? '추가 중…' : '추가'}
