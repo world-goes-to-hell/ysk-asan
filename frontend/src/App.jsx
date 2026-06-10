@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 
 import AuthPage from './components/auth/AuthPage';
+import ContactsPage from './components/contacts/ContactsPage';
 import AppLayout from './components/layout/AppLayout';
 import DashboardPage from './components/dashboard/DashboardPage';
 import { useAuth } from './contexts/AuthContext';
@@ -19,11 +20,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
-          {/* 연락처 화면은 다음 Task 에서 ContactsPage 로 교체 */}
-          <Route
-            path="contacts"
-            element={<div>연락처 관리 (다음 단계에서 구현)</div>}
-          />
+          <Route path="contacts" element={<ContactsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
