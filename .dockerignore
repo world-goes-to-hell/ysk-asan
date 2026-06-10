@@ -1,0 +1,34 @@
+# VCS / IDE
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+
+# 문서/마크다운(이미지에 불필요)
+*.md
+docs/
+
+# 빌드 산출물(이미지 안에서 새로 생성)
+build/
+.gradle/
+frontend/node_modules/
+frontend/dist/
+src/main/resources/static/
+
+# 시크릿/개인정보 — 로컬 docker build 대비 방어
+# (GitHub Actions 는 checkout 이라 .gitignore 된 파일이 본래 없음)
+src/main/resources/application-local.yml
+deploy/**/.env
+scripts/db-tunnel.ps1
+scripts/db-tunnel.sh
+
+# 개인정보가 담길 수 있는 데이터 파일
+*.xlsx
+*.xls
+*.csv
+*.hwp
+*.hwpx
+data/
+exports/
+backup/

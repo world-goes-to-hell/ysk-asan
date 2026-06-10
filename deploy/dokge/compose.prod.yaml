@@ -1,0 +1,60 @@
+# ============================================================
+# Dockge 운영 스택: ysk-asan (MariaDB + App)
+# ------------------------------------------------------------
+# - app 은 GHCR 에 자동 빌드된 이미지를 받아 실행한다(.github/workflows/ghcr-publish.yml).
+# - app → mariadb 는 도커 내부망(서비스명 mariadb)으로 접속 → application-prod 의 DB_HOST 기본값과 일치.
+# - 사용법(개발서버):
+#     1) cp .env.example .env  후 실제 비밀번호/포트 입력
+#     2) 최초 1회: .env 에 DB_DDL_AUTO=update 로 스키마 생성 후, 다음 배포부터 그 줄 삭제(validate)
+#     3) docker compose -f compose.prod.yaml up -d   (또는 Dockge 스택으로 등록)
+#     4) GHCR 패키지가 private 이면 먼저  docker login ghcr.io  (PAT: read:packages)
+# - 개발 PC 는 이 스택을 띄우지 않고, mariadb 포트(3306)에 SSH 터널로 접속해 로컬 bootRun.
+# ============================================================
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: ysk-asan-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-ysk_asan}
+      MARIADB_USER: ${MARIADB_USER:-ysk}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}
+    # 한글(이름·부서) 저장을 위해 utf8mb4 강제
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MARIADB_PORT:-3306}:3306"         # 개발 PC 가 SSH 터널로 접속할 포트
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  app:
+    image: ghcr.io/world-goes-to-hell/ysk-asan:latest
+    container_name: ysk-asan-app
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mariadb                        # 도커 내부망 서비스명
+      DB_PORT: "3306"
+      DB_NAME: ${MARIADB_DATABASE:-ysk_asan}
+      DB_USERNAME: ${MARIADB_USER:-ysk}
+      DB_PASSWORD: ${MARIADB_PASSWORD:?set MARIADB_PASSWORD in .env}
+      DB_DDL_AUTO: ${DB_DDL_AUTO:-validate}   # 최초 배포만 update, 이후 validate
+      TZ: Asia/Seoul
+    ports:
+      - "${WAS_PORT:-8181}:8181"
+
+volumes:
+  mariadb_data:
+    name: ysk-asan-mariadb-data               # 개발 compose.yaml 과 동일 볼륨(데이터 공유)
