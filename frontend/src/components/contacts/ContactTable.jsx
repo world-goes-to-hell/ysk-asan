@@ -59,6 +59,7 @@ export default function ContactTable({
             <th>부서</th>
             <th>이름</th>
             <th>이메일</th>
+            <th className={styles.auditCol}>최근 수정</th>
             <th className={styles.actionCol} aria-label="작업" />
           </tr>
         </thead>

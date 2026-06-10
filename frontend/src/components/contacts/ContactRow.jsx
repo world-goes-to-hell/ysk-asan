@@ -2,6 +2,21 @@ import { useState } from 'react';
 
 import styles from '../../styles/contacts.module.css';
 
+const fmtDate = (iso) => (iso ? iso.slice(0, 10) : '');
+
+/** "수정자 · 날짜" 요약. 변경 이력 도입 전 데이터(작성자 null)는 '-'. */
+function auditSummary(contact) {
+  const who = contact.updatedBy || contact.createdBy;
+  if (!who) return '-';
+  return `${who} · ${fmtDate(contact.updatedAt)}`;
+}
+
+function auditTooltip(contact) {
+  const created = `등록: ${contact.createdBy || '알 수 없음'} (${fmtDate(contact.createdAt)})`;
+  const updated = `수정: ${contact.updatedBy || '알 수 없음'} (${fmtDate(contact.updatedAt)})`;
+  return `${created}\n${updated}`;
+}
+
 export default function ContactRow({ contact, selected, onToggle, onUpdate, onRequestDelete }) {
   const [editing, setEditing] = useState(false);
   const [department, setDepartment] = useState(contact.department);
@@ -46,6 +61,7 @@ export default function ContactRow({ contact, selected, onToggle, onUpdate, onRe
         <td>
           <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="이메일 수정" />
         </td>
+        <td className={styles.auditCol} />
         <td className={styles.actionCol}>
           <div className={styles.rowActions}>
             <button type="button" className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
@@ -68,6 +84,9 @@ export default function ContactRow({ contact, selected, onToggle, onUpdate, onRe
       <td>{contact.department}</td>
       <td>{contact.name}</td>
       <td className={styles.emailCell}>{contact.email}</td>
+      <td className={styles.auditCol} title={auditTooltip(contact)}>
+        {auditSummary(contact)}
+      </td>
       <td className={styles.actionCol}>
         <div className={styles.rowActions}>
           <button type="button" className="btn btn-ghost btn-sm" onClick={startEdit}>

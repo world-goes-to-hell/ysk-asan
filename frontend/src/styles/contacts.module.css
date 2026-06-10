@@ -157,6 +157,14 @@
   text-align: right;
 }
 
+/* 변경 이력 요약(수정자 · 날짜) — 보조 정보라 작고 옅게 */
+.auditCol {
+  width: 170px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .emailCell {
   color: var(--text-secondary);
 }
