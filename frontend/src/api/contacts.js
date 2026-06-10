@@ -16,6 +16,8 @@ const contactsAPI = {
     apiFetch('/api/contacts/' + id, { method: 'PUT', body: JSON.stringify(data) }),
   remove: (ids) =>
     apiFetch('/api/contacts?' + buildIdsQuery(ids), { method: 'DELETE' }),
+  importCsv: (formData) =>
+    apiFetch('/api/contacts/import', { method: 'POST', body: formData }),
 };
 
 export default contactsAPI;

@@ -14,6 +14,8 @@ import java.util.Set;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,6 +45,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ContactImportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ContactImportService.class);
 
     private static final List<String> EXPECTED_HEADER = List.of("부서", "이름", "이메일");
     private static final int MAX_ROWS = 5_000;
@@ -75,7 +79,9 @@ public class ContactImportService {
                 throw new CsvImportException("파일이 비어 있습니다.");
             }
         } catch (IOException e) {
-            throw new CsvImportException("CSV 파싱에 실패했습니다: " + e.getMessage());
+            // 내부 상세(라이브러리 메시지/경로)는 서버 로그만 — 클라이언트엔 일반화 메시지(CWE-209).
+            log.warn("CSV 파싱 오류", e);
+            throw new CsvImportException("CSV 파싱에 실패했습니다. 파일 형식을 확인하세요.");
         }
 
         if (!errors.isEmpty()) {
@@ -146,7 +152,8 @@ public class ContactImportService {
             }
             return bytes;
         } catch (IOException e) {
-            throw new CsvImportException("파일을 읽지 못했습니다: " + e.getMessage());
+            log.warn("업로드 파일 읽기 오류", e);
+            throw new CsvImportException("파일을 읽지 못했습니다. 다시 시도해 주세요.");
         }
     }
 

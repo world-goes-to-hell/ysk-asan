@@ -21,10 +21,11 @@ export async function apiFetch(url, options = {}) {
 
   if (!response.ok) {
     let message = `요청 실패: ${response.status}`;
+    let errorBody = null;
     try {
-      const body = await response.json();
-      if (body && (body.message || body.error)) {
-        message = body.message || body.error;
+      errorBody = await response.json();
+      if (errorBody && (errorBody.message || errorBody.error)) {
+        message = errorBody.message || errorBody.error;
       }
     } catch (_) {
       /* 응답 바디 없음/비JSON — 기본 메시지 유지 */
@@ -36,6 +37,7 @@ export async function apiFetch(url, options = {}) {
 
     const err = new Error(message);
     err.status = response.status;
+    err.body = errorBody; // 구조화된 오류(예: CSV 가져오기 행별 errors[]) 접근용
     throw err;
   }
 

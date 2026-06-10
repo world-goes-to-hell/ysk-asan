@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
+import contactsAPI from '../../api/contacts';
 import { useContacts } from '../../hooks/useContacts';
 import { useToast } from '../../hooks/useToast';
 import { buildRecipients } from '../../utils/recipients';
@@ -7,6 +8,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import ContactAddForm from './ContactAddForm';
 import ContactTable from './ContactTable';
 import DepartmentTabs from './DepartmentTabs';
+import ImportErrorDialog from './ImportErrorDialog';
 import SelectionBar from './SelectionBar';
 import styles from '../../styles/contacts.module.css';
 
@@ -14,6 +16,8 @@ export default function ContactsPage() {
   const [qInput, setQInput] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [pendingDelete, setPendingDelete] = useState(null); // 삭제 대기 id 배열
+  const [importErrors, setImportErrors] = useState(null); // {message, errors[]}
+  const fileInputRef = useRef(null);
   const showToast = useToast();
 
   // 검색 디바운스 300ms (IME 안전)
@@ -34,6 +38,7 @@ export default function ContactsPage() {
     addContact,
     updateContact,
     deleteByIds,
+    reload,
   } = useContacts(debouncedQ);
 
   const visibleIds = useMemo(() => visible.map((c) => c.id), [visible]);
@@ -112,6 +117,26 @@ export default function ContactsPage() {
     }
   };
 
+  // CSV 일괄 가져오기. 오류 행이 있으면 서버가 전체 거부(all-or-nothing) + 행별 오류 반환.
+  const onImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 파일 재선택 허용
+    if (!file) return;
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res = await contactsAPI.importCsv(form);
+      showToast(`${res.imported}건을 등록했습니다.`, 'success');
+      await reload();
+    } catch (err) {
+      if (err.body?.errors?.length) {
+        setImportErrors({ message: err.message, errors: err.body.errors });
+      } else {
+        showToast(err.message, 'error');
+      }
+    }
+  };
+
   const onConfirmDelete = async () => {
     const ids = pendingDelete;
     setPendingDelete(null);
@@ -135,9 +160,21 @@ export default function ContactsPage() {
             onChange={(e) => setQInput(e.target.value)}
             aria-label="이름 또는 이메일 검색"
           />
+          <button type="button" className="btn btn-ghost"
+                  onClick={() => fileInputRef.current?.click()}>
+            CSV 가져오기
+          </button>
           <button type="button" className="btn btn-ghost" onClick={onExportCsv}>
             CSV 내보내기
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: 'none' }}
+            onChange={onImportFile}
+            aria-label="CSV 파일 선택"
+          />
         </div>
       </div>
 
@@ -170,6 +207,14 @@ export default function ContactsPage() {
           confirmLabel="삭제"
           onConfirm={onConfirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {importErrors && (
+        <ImportErrorDialog
+          message={importErrors.message}
+          errors={importErrors.errors}
+          onClose={() => setImportErrors(null)}
         />
       )}
     </div>

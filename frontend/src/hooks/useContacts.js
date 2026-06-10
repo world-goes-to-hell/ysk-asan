@@ -59,6 +59,9 @@ export function useContacts(q) {
     [activeDept, q, load]
   );
 
+  /** 현재 필터 기준 재조회(일괄 가져오기 등 외부 변이 후 갱신용). */
+  const reload = useCallback(() => load(activeDept, q), [activeDept, q, load]);
+
   const updateContact = useCallback(
     async (id, data) => {
       await contactsAPI.update(id, data);
@@ -100,5 +103,6 @@ export function useContacts(q) {
     addContact,
     updateContact,
     deleteByIds,
+    reload,
   };
 }
