@@ -1,9 +1,14 @@
 package com.ysk.contact.controller;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +44,18 @@ public class ContactController {
     @GetMapping("/departments")
     public ResponseEntity<List<String>> departments() {
         return ResponseEntity.ok(contactService.departments());
+    }
+
+    /** 현재 필터(부서/검색어)를 적용한 연락처 CSV 다운로드. 파일명은 ASCII 안전(contacts-YYYYMMDD.csv). */
+    @GetMapping("/export")
+    public ResponseEntity<String> export(
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String q) {
+        String filename = "contacts-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(contactService.exportCsv(department, q));
     }
 
     @PostMapping

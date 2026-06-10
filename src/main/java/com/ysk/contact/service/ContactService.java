@@ -64,6 +64,37 @@ public class ContactService {
         return found.size();
     }
 
+    /**
+     * 현재 필터(부서/검색어)를 그대로 적용해 CSV 본문을 만든다.
+     * <ul>
+     *   <li>선두 UTF-8 BOM — 없으면 Windows Excel 이 cp949 로 읽어 한글이 깨진다.</li>
+     *   <li>RFC 4180 이스케이프 — 쉼표/따옴표/개행 포함 필드는 쿼팅 + 따옴표 이중화.</li>
+     *   <li>수식 인젝션 가드 — {@code = + - @ 탭 CR} 로 시작하는 셀은 ' prefix 로 무력화
+     *       (악의 데이터가 Excel 에서 수식으로 실행되는 것 차단).</li>
+     * </ul>
+     */
+    @Transactional(readOnly = true)
+    public String exportCsv(String department, String q) {
+        StringBuilder sb = new StringBuilder("\uFEFF").append("부서,이름,이메일").append("\r\n");
+        for (Contact contact : contactRepository.search(normalize(department), normalize(q))) {
+            sb.append(csvField(contact.getDepartment())).append(',')
+              .append(csvField(contact.getName())).append(',')
+              .append(csvField(contact.getEmail())).append("\r\n");
+        }
+        return sb.toString();
+    }
+
+    private static String csvField(String value) {
+        String v = value == null ? "" : value;
+        if (!v.isEmpty() && "=+-@\t\r".indexOf(v.charAt(0)) >= 0) {
+            v = "'" + v;
+        }
+        if (v.contains(",") || v.contains("\"") || v.contains("\n") || v.contains("\r")) {
+            v = "\"" + v.replace("\"", "\"\"") + "\"";
+        }
+        return v;
+    }
+
     private String normalize(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
     }

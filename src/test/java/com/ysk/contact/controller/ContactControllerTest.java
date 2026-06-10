@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -62,6 +63,73 @@ class ContactControllerTest extends IntegrationTest {
         mockMvc.perform(post(BASE)
                         .contentType(MediaType.APPLICATION_JSON).content(body("영업", "홍길동", "h@ex.com")))
                 .andExpect(status().isForbidden());
+    }
+
+    // ---------- CSV 내보내기 ----------
+
+    @Test
+    void export_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get(BASE + "/export")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void export_returnsCsv_withBomHeaderAndRows() throws Exception {
+        createContact("영업", "홍길동", "hong@ex.com");
+        createContact("개발", "김철수", "kim@ex.com");
+
+        MvcResult result = mockMvc.perform(get(BASE + "/export"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type",
+                        org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition",
+                        org.hamcrest.Matchers.containsString("attachment")))
+                .andReturn();
+
+        String csv = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        // Excel 한글 인식용 UTF-8 BOM 이 선두에 있어야 한다.
+        org.assertj.core.api.Assertions.assertThat(csv).startsWith("\uFEFF");
+        org.assertj.core.api.Assertions.assertThat(csv).contains("부서,이름,이메일");
+        org.assertj.core.api.Assertions.assertThat(csv).contains("영업,홍길동,hong@ex.com");
+        org.assertj.core.api.Assertions.assertThat(csv).contains("개발,김철수,kim@ex.com");
+    }
+
+    @Test
+    @WithMockUser
+    void export_respectsDepartmentFilter() throws Exception {
+        createContact("영업", "홍길동", "hong@ex.com");
+        createContact("개발", "김철수", "kim@ex.com");
+
+        String csv = mockMvc.perform(get(BASE + "/export").param("department", "영업"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+
+        org.assertj.core.api.Assertions.assertThat(csv).contains("홍길동");
+        org.assertj.core.api.Assertions.assertThat(csv).doesNotContain("김철수");
+    }
+
+    @Test
+    @WithMockUser
+    void export_escapesSpecialChars_andGuardsFormulaInjection() throws Exception {
+        // 쉼표/따옴표 포함 부서, 수식 시작(=) 이름 — RFC4180 쿼팅 + 수식 인젝션 가드 검증.
+        // 따옴표가 body() 의 문자열 연결 JSON 을 깨뜨리므로 ObjectMapper 로 안전 직렬화.
+        String json = objectMapper.writeValueAsString(java.util.Map.of(
+                "department", "영업,\"1\"팀",
+                "name", "=SUM(A1:A9)",
+                "email", "evil@ex.com"));
+        mockMvc.perform(post(BASE).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isCreated());
+
+        String csv = mockMvc.perform(get(BASE + "/export"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+
+        // 쉼표·따옴표 포함 필드는 쿼팅되고 내부 따옴표는 이중화된다.
+        org.assertj.core.api.Assertions.assertThat(csv).contains("\"영업,\"\"1\"\"팀\"");
+        // 수식 시작 문자는 작은따옴표 prefix 로 무력화된다(엑셀이 텍스트로 취급).
+        org.assertj.core.api.Assertions.assertThat(csv).contains("'=SUM(A1:A9)");
+        org.assertj.core.api.Assertions.assertThat(csv).doesNotContain(",=SUM");
     }
 
     // ---------- 생성 ----------
