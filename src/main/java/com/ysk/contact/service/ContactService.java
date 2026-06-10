@@ -86,7 +86,8 @@ public class ContactService {
 
     private static String csvField(String value) {
         String v = value == null ? "" : value;
-        if (!v.isEmpty() && "=+-@\t\r".indexOf(v.charAt(0)) >= 0) {
+        // OWASP CSV Injection 가드: 수식(= + - @)·제어문자(탭/CR/LF)·DDE(|) 시작 셀 무력화.
+        if (!v.isEmpty() && "=+-@\t\r\n|".indexOf(v.charAt(0)) >= 0) {
             v = "'" + v;
         }
         if (v.contains(",") || v.contains("\"") || v.contains("\n") || v.contains("\r")) {

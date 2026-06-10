@@ -132,6 +132,26 @@ class ContactControllerTest extends IntegrationTest {
         org.assertj.core.api.Assertions.assertThat(csv).doesNotContain(",=SUM");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(
+            strings = { "=SUM(A1)", "+1+1", "-1+1", "@SUM(A1)", "|cmd /c calc" })
+    @WithMockUser
+    void export_guardsAllInjectionPrefixes(String injectedName) throws Exception {
+        // OWASP CSV Injection 시작 문자 전부에 ' prefix 가 붙는지 회귀 가드.
+        String json = objectMapper.writeValueAsString(java.util.Map.of(
+                "department", "영업", "name", injectedName, "email", "x@ex.com"));
+        mockMvc.perform(post(BASE).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isCreated());
+
+        String csv = mockMvc.perform(get(BASE + "/export"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+
+        org.assertj.core.api.Assertions.assertThat(csv).contains("'" + injectedName);
+        org.assertj.core.api.Assertions.assertThat(csv).doesNotContain("," + injectedName);
+    }
+
     // ---------- 생성 ----------
 
     @Test

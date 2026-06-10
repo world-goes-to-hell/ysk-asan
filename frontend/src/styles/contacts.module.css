@@ -15,6 +15,12 @@
   font-weight: 700;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .search {
   width: 240px;
   max-width: 45vw;

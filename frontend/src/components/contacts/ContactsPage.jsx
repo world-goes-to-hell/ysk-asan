@@ -88,6 +88,30 @@ export default function ContactsPage() {
     }
   };
 
+  // 현재 필터(부서 탭/검색어) 그대로 CSV 다운로드. apiFetch 는 JSON 전용이라 blob 으로 직접 처리.
+  const onExportCsv = async () => {
+    const params = new URLSearchParams();
+    if (activeDept) params.set('department', activeDept);
+    if (debouncedQ) params.set('q', debouncedQ);
+    const qs = params.toString();
+    try {
+      const res = await fetch('/api/contacts/export' + (qs ? '?' + qs : ''), {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`CSV 내보내기에 실패했습니다. (${res.status})`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contacts-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV 파일을 내려받았습니다.', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  };
+
   const onConfirmDelete = async () => {
     const ids = pendingDelete;
     setPendingDelete(null);
@@ -103,13 +127,18 @@ export default function ContactsPage() {
     <div className={styles.page}>
       <div className={styles.headerRow}>
         <h2 className={styles.heading}>연락처 관리</h2>
-        <input
-          className={`form-input ${styles.search}`}
-          placeholder="이름·이메일 검색"
-          value={qInput}
-          onChange={(e) => setQInput(e.target.value)}
-          aria-label="이름 또는 이메일 검색"
-        />
+        <div className={styles.headerActions}>
+          <input
+            className={`form-input ${styles.search}`}
+            placeholder="이름·이메일 검색"
+            value={qInput}
+            onChange={(e) => setQInput(e.target.value)}
+            aria-label="이름 또는 이메일 검색"
+          />
+          <button type="button" className="btn btn-ghost" onClick={onExportCsv}>
+            CSV 내보내기
+          </button>
+        </div>
       </div>
 
       <ContactAddForm onAdd={onAdd} departments={departments} knownEmails={knownEmails} />
