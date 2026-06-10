@@ -60,4 +60,19 @@ public class UserService {
                 .filter(user -> user.getFailedLoginAttempts() > 0)
                 .ifPresent(User::resetLoginFailures);
     }
+
+    /**
+     * 본인 비밀번호 변경. 세션 탈취만으로는 변경할 수 없도록 현재 비밀번호를 확인한다.
+     * 현재 비밀번호 검증은 AuthenticationManager 를 타지 않으므로 실패 카운트/잠금 대상이 아니다
+     * (세션 보유자의 brute-force 는 사내툴 리스크로 수용).
+     * 부수효과: remember-me 토큰 서명에 비밀번호가 포함되므로 변경 즉시 기존 쿠키가 전부 무효화된다.
+     */
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        User user = findByUsername(username);
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
+        }
+        user.changePassword(passwordEncoder.encode(newPassword));
+    }
 }

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ysk.contact.dto.LoginRequest;
+import com.ysk.contact.dto.PasswordChangeRequest;
 import com.ysk.contact.dto.RegisterRequest;
 import com.ysk.contact.dto.UserResponse;
 import com.ysk.contact.entity.User;
@@ -110,6 +111,18 @@ public class AuthController {
         // remember-me 쿠키를 maxAge=0 으로 만료시킨다(auth 가 null 이어도 안전).
         rememberMeServices.logout(httpRequest, httpResponse, auth);
         SecurityContextHolder.clearContext();
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 본인 비밀번호 변경. SecurityConfig 가 이 경로만 authenticated 로 강제한다
+     * (/api/auth/** 는 permitAll 이지만 더 구체적인 매처가 우선). CSRF 보호 적용 경로.
+     */
+    @PostMapping("/password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody PasswordChangeRequest request,
+                                               Authentication authentication) {
+        userService.changePassword(authentication.getName(),
+                request.currentPassword(), request.newPassword());
         return ResponseEntity.ok().build();
     }
 

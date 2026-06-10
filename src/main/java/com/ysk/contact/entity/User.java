@@ -101,4 +101,9 @@ public class User {
     public void changeRole(UserRole role) {
         this.role = role;
     }
+
+    /** 비밀번호 교체(이미 인코딩된 값). 평문은 절대 전달하지 말 것 — 인코딩은 서비스 책임. */
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }

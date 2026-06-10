@@ -153,6 +153,91 @@ class AuthControllerTest extends IntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // ---------- 비밀번호 변경 ----------
+
+    private MockHttpSession loginSession(String username, String password) throws Exception {
+        return (MockHttpSession) mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials(username, password)))
+                .andExpect(status().isOk())
+                .andReturn().getRequest().getSession(false);
+    }
+
+    @Test
+    void changePassword_success_newWorks_oldRejected() throws Exception {
+        registerApproved("pwuser");
+        MockHttpSession session = loginSession("pwuser", "secret12");
+
+        mockMvc.perform(post("/api/auth/password").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"secret12\",\"newPassword\":\"newsecret34\"}"))
+                .andExpect(status().isOk());
+
+        // 옛 비밀번호 거부, 새 비밀번호 통과
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials("pwuser", "secret12")))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials("pwuser", "newsecret34")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void changePassword_wrongCurrent_returns400() throws Exception {
+        registerApproved("pwwrong");
+        MockHttpSession session = loginSession("pwwrong", "secret12");
+
+        mockMvc.perform(post("/api/auth/password").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"nope9999\",\"newPassword\":\"newsecret34\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void changePassword_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(post("/api/auth/password").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"secret12\",\"newPassword\":\"newsecret34\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void changePassword_tooShortNew_returns400() throws Exception {
+        registerApproved("pwshort");
+        MockHttpSession session = loginSession("pwshort", "secret12");
+
+        mockMvc.perform(post("/api/auth/password").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"secret12\",\"newPassword\":\"short\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void changePassword_invalidatesExistingRememberMeCookie() throws Exception {
+        registerApproved("pwrm");
+        MvcResult login = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"pwrm\",\"password\":\"secret12\",\"rememberMe\":true}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
+        Cookie rm = login.getResponse().getCookie("remember-me");
+
+        // 변경 전: 쿠키만으로 인증됨
+        mockMvc.perform(get("/api/auth/me").cookie(rm)).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/password").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"secret12\",\"newPassword\":\"newsecret34\"}"))
+                .andExpect(status().isOk());
+
+        // 토큰 서명에 비밀번호가 포함되므로 변경 즉시 기존 쿠키는 전부 무효(탈취 토큰 차단).
+        mockMvc.perform(get("/api/auth/me").cookie(rm)).andExpect(status().isUnauthorized());
+    }
+
     // ---------- 승인제 + 로그인 실패 잠금 ----------
 
     @Test
