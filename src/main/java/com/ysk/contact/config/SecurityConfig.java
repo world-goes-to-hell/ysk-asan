@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
@@ -40,7 +41,9 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 // 미인증 접근 시 리다이렉트/403 대신 401 을 반환한다(프론트 apiFetch 세션 만료 처리용).
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                // CsrfFilter 뒤에서 토큰을 렌더링해 XSRF-TOKEN 쿠키 발급을 강제한다(SPA 첫 요청 403 방지).
+                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class);
 
         return http.build();
     }
