@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -63,6 +64,15 @@ class AuthControllerTest extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{not valid json"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void securityHeaders_present() throws Exception {
+        // 클릭재킹/스니핑 방지 헤더가 모든 응답(미인증 401 포함)에 실리는지 확인.
+        // HSTS 는 secure 요청에만 나가므로(http 테스트) 검증 대상에서 제외.
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
     }
 
     @Test

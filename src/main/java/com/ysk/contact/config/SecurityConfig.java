@@ -60,6 +60,15 @@ public class SecurityConfig {
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                         .ignoringRequestMatchers("/api/auth/register", "/api/auth/login")
                 )
+                // 보안 응답 헤더. X-Content-Type-Options(nosniff)는 Spring Security 기본 적용.
+                // HSTS 는 secure 요청에만 나가므로 prod 의 forward-headers-strategy 로 https 를 인식시킨다.
+                .headers(headers -> headers
+                        // 클릭재킹 방지: 어떤 사이트에서도 iframe 임베드 불가.
+                        .frameOptions(frame -> frame.deny())
+                        // HTTPS 1년 강제 + 서브도메인 포함(프록시가 https 종단 → forward header 로 인식).
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31_536_000)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/assets/**", "/", "/index.html", "/favicon.ico").permitAll()
