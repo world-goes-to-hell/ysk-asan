@@ -41,6 +41,13 @@ public class OfficialDocumentController {
                 .body(Map.of("token", documentService.issue(request)));
     }
 
+    /** 양식별 입력값 자동완성 이력(로그인 전용, 전역 공유). */
+    @GetMapping("/field-history")
+    public ResponseEntity<Map<String, List<String>>> fieldHistory(
+            @RequestParam("templateId") String templateId) {
+        return ResponseEntity.ok(documentService.fieldHistory(templateId));
+    }
+
     /** 발급자 본인의 공문 목록(로그인 전용). */
     @GetMapping("/mine")
     public ResponseEntity<List<IssuedDocumentSummary>> mine(Authentication authentication) {

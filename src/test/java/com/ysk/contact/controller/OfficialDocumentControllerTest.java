@@ -144,6 +144,69 @@ class OfficialDocumentControllerTest extends IntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // ---------- 입력값 이력 자동완성 (M13) ----------
+
+    private String issueWithFields(String fieldsJson) throws Exception {
+        MvcResult result = mockMvc.perform(post(BASE).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"templateId\":\"general-official\",\"password\":\"view1234\","
+                                + "\"fields\":" + fieldsJson + "}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
+    }
+
+    @Test
+    void fieldHistory_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get(BASE + "/field-history").param("templateId", "general-official"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void fieldHistory_recordsShortFields_excludesMultilineAndLong() throws Exception {
+        String longValue = "가".repeat(101);
+        issueWithFields("{\"receiver\":\"행정실\",\"body\":\"1. 첫줄\\n2. 둘째줄\",\"title\":\""
+                + longValue + "\"}");
+
+        mockMvc.perform(get(BASE + "/field-history").param("templateId", "general-official"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receiver[0]").value("행정실"))
+                .andExpect(jsonPath("$.body").doesNotExist())   // 개행 포함 → 제외
+                .andExpect(jsonPath("$.title").doesNotExist()); // 100자 초과 → 제외
+    }
+
+    @Test
+    @WithMockUser
+    void fieldHistory_duplicateValue_storedOnce_andRecencyOrdered() throws Exception {
+        issueWithFields("{\"receiver\":\"행정실\"}");
+        issueWithFields("{\"receiver\":\"총무팀\"}");
+        issueWithFields("{\"receiver\":\"행정실\"}"); // 재사용 → 중복 행 없이 최근 사용으로 갱신
+
+        mockMvc.perform(get(BASE + "/field-history").param("templateId", "general-official"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receiver.length()").value(2))
+                .andExpect(jsonPath("$.receiver[0]").value("행정실"))  // 최근 사용순
+                .andExpect(jsonPath("$.receiver[1]").value("총무팀"));
+    }
+
+    @Test
+    @WithMockUser
+    void fieldHistory_isolatedPerTemplate() throws Exception {
+        issueWithFields("{\"receiver\":\"행정실\"}"); // general-official 에만 기록
+
+        mockMvc.perform(get(BASE + "/field-history").param("templateId", "employment-cert"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receiver").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser
+    void fieldHistory_unknownTemplate_returns400() throws Exception {
+        mockMvc.perform(get(BASE + "/field-history").param("templateId", "no-such"))
+                .andExpect(status().isBadRequest());
+    }
+
     // ---------- 발급자 목록/열람 (M11) ----------
 
     /** 지정 사용자로 발급(요청별 인증). */

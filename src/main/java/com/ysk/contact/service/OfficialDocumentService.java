@@ -16,9 +16,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ysk.contact.dto.DocumentIssueRequest;
 import com.ysk.contact.dto.DocumentViewResponse;
+import com.ysk.contact.entity.DocumentFieldHistory;
 import com.ysk.contact.entity.OfficialDocument;
 import com.ysk.contact.exception.DocumentNotFoundException;
 import com.ysk.contact.exception.DocumentPasswordException;
+import com.ysk.contact.repository.DocumentFieldHistoryRepository;
 import com.ysk.contact.repository.OfficialDocumentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -47,7 +49,12 @@ public class OfficialDocumentService {
     private static final long MAX_SEAL_BYTES = 1024 * 1024; // 1MB
     private static final Set<String> SEAL_CONTENT_TYPES = Set.of("image/png", "image/jpeg");
 
+    /** 자동완성 이력에 저장할 값의 최대 길이(본문류 제외 휴리스틱과 짝). */
+    private static final int MAX_HISTORY_VALUE_LENGTH = 100;
+    private static final int MAX_HISTORY_SUGGESTIONS_PER_FIELD = 20;
+
     private final OfficialDocumentRepository documentRepository;
+    private final DocumentFieldHistoryRepository fieldHistoryRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -72,7 +79,47 @@ public class OfficialDocumentService {
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .build();
         documentRepository.save(document);
+        recordFieldHistory(request.templateId(), request.fields());
         return document.getShareToken();
+    }
+
+    /**
+     * 자동완성 이력 기록. 본문류(개행 포함·100자 초과)와 빈 값은 제외하고,
+     * 같은 값은 1행만 유지하며 lastUsedAt 만 갱신한다(최근 사용순 제안).
+     */
+    private void recordFieldHistory(String templateId, Map<String, String> fields) {
+        fields.forEach((key, raw) -> {
+            if (key == null || key.length() > 50 || raw == null) {
+                return;
+            }
+            String value = raw.trim();
+            if (value.isEmpty() || value.length() > MAX_HISTORY_VALUE_LENGTH
+                    || value.contains("\n") || value.contains("\r")) {
+                return;
+            }
+            fieldHistoryRepository.findByTemplateIdAndFieldKeyAndValue(templateId, key, value)
+                    .ifPresentOrElse(DocumentFieldHistory::touch,
+                            () -> fieldHistoryRepository.save(
+                                    DocumentFieldHistory.of(templateId, key, value)));
+        });
+    }
+
+    /** 양식별 자동완성 이력 — {필드키: [값(최근 사용순, 상위 20)]}. */
+    @Transactional(readOnly = true)
+    public Map<String, java.util.List<String>> fieldHistory(String templateId) {
+        if (!KNOWN_TEMPLATES.contains(templateId)) {
+            throw new IllegalArgumentException("알 수 없는 양식입니다: " + templateId);
+        }
+        Map<String, java.util.List<String>> out = new java.util.LinkedHashMap<>();
+        for (DocumentFieldHistory history
+                : fieldHistoryRepository.findTop300ByTemplateIdOrderByLastUsedAtDescIdDesc(templateId)) {
+            java.util.List<String> values =
+                    out.computeIfAbsent(history.getFieldKey(), k -> new java.util.ArrayList<>());
+            if (values.size() < MAX_HISTORY_SUGGESTIONS_PER_FIELD) {
+                values.add(history.getValue());
+            }
+        }
+        return out;
     }
 
     /** 발급자 본인의 공문 목록(최신순). */
