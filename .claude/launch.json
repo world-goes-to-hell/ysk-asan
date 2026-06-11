@@ -4,7 +4,7 @@
     {
       "name": "app",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "D:\\DEV\\WORKSPACE\\PERSONAL\\ysk-asan\\gradlew.bat", "bootRun", "--args=--spring.profiles.active=local,localtest"],
+      "runtimeArgs": ["/c", "D:\\DEV\\WORKSPACE\\PERSONAL\\ysk-asan\\.claude\\preview-app.bat"],
       "port": 8181
     },
     {
