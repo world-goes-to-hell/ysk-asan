@@ -84,6 +84,9 @@ public class SecurityConfig {
                         // 비밀번호 변경은 로그인 필수 — /api/auth/** permitAll 보다 먼저(구체 규칙 우선).
                         .requestMatchers("/api/auth/password").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
+                        // 공문 공개 열람/직인: 토큰+비밀번호로 보호(로그인 불필요). CSRF 는 그대로 적용.
+                        // 발급(POST /api/documents)은 아래 /api/** authenticated 에 걸린다.
+                        .requestMatchers("/api/documents/*/view", "/api/documents/*/seal").permitAll()
                         .requestMatchers("/assets/**", "/", "/index.html", "/favicon.ico").permitAll()
                         // 회원 관리는 ADMIN 전용(보다 구체적인 규칙이라 /api/** 앞에 선언).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

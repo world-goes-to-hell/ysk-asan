@@ -17,6 +17,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import com.ysk.contact.exception.ContactNotFoundException;
 import com.ysk.contact.exception.CsvImportException;
+import com.ysk.contact.exception.DocumentNotFoundException;
+import com.ysk.contact.exception.DocumentPasswordException;
 import com.ysk.contact.exception.UserNotFoundException;
 
 /**
@@ -59,6 +61,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+    }
+
+    /** 공문 미존재/잠김 — 공개 토큰 엔드포인트라 두 경우 모두 404(존재 비노출). */
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleDocumentNotFound(DocumentNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+    }
+
+    /** 공문 열람 비밀번호 불일치. */
+    @ExceptionHandler(DocumentPasswordException.class)
+    public ResponseEntity<Map<String, String>> handleDocumentPassword(DocumentPasswordException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", e.getMessage()));
     }
 
     /** CSV 가져오기 검증 실패 — all-or-nothing 거부 + 행별 오류 목록. */

@@ -1,0 +1,150 @@
+package com.ysk.contact.service;
+
+import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ysk.contact.dto.DocumentIssueRequest;
+import com.ysk.contact.dto.DocumentViewResponse;
+import com.ysk.contact.entity.OfficialDocument;
+import com.ysk.contact.exception.DocumentNotFoundException;
+import com.ysk.contact.exception.DocumentPasswordException;
+import com.ysk.contact.repository.OfficialDocumentRepository;
+
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 공문 발급/공개 열람/직인 날인.
+ *
+ * <p>공개 엔드포인트 보안 원칙:
+ * <ul>
+ *   <li>토큰 미존재와 잠김을 동일하게 404 처리(존재 비노출).</li>
+ *   <li>비밀번호 연속 오류 {@value #MAX_PASSWORD_FAILURES}회 → 잠금(재발급 필요), 성공 시 카운터 리셋.</li>
+ *   <li>검증 후 세션/상태를 만들지 않음 — 매 요청 비밀번호 동봉(무상태).</li>
+ * </ul>
+ */
+@Service
+@RequiredArgsConstructor
+public class OfficialDocumentService {
+
+    /** 프론트 템플릿 레지스트리(frontend/src/documents/templates.jsx)와 반드시 동기화. */
+    private static final Set<String> KNOWN_TEMPLATES = Set.of("general-official", "employment-cert");
+
+    private static final int MAX_PASSWORD_FAILURES = 10;
+    private static final int MAX_FIELDS = 30;
+    private static final int MAX_FIELDS_JSON_BYTES = 10_000;
+    private static final long MAX_SEAL_BYTES = 1024 * 1024; // 1MB
+    private static final Set<String> SEAL_CONTENT_TYPES = Set.of("image/png", "image/jpeg");
+
+    private final OfficialDocumentRepository documentRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    @Transactional
+    public String issue(DocumentIssueRequest request) {
+        if (!KNOWN_TEMPLATES.contains(request.templateId())) {
+            throw new IllegalArgumentException("알 수 없는 양식입니다: " + request.templateId());
+        }
+        if (request.fields().size() > MAX_FIELDS) {
+            throw new IllegalArgumentException("입력 항목이 너무 많습니다.");
+        }
+        String fieldsJson = toJson(request.fields());
+        if (fieldsJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > MAX_FIELDS_JSON_BYTES) {
+            throw new IllegalArgumentException("입력 내용이 너무 깁니다.");
+        }
+
+        OfficialDocument document = OfficialDocument.builder()
+                .shareToken(generateToken())
+                .templateId(request.templateId())
+                .fieldsJson(fieldsJson)
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .build();
+        documentRepository.save(document);
+        return document.getShareToken();
+    }
+
+    // noRollbackFor: 비밀번호 오류 시에도 실패 카운트 증가가 커밋되어야 잠금이 동작한다.
+    @Transactional(noRollbackFor = DocumentPasswordException.class)
+    public DocumentViewResponse view(String token, String password) {
+        OfficialDocument document = findUsable(token);
+        verifyPassword(document, password);
+        return DocumentViewResponse.of(document, fromJson(document.getFieldsJson()));
+    }
+
+    @Transactional(noRollbackFor = DocumentPasswordException.class)
+    public void attachSeal(String token, String password, MultipartFile file) {
+        OfficialDocument document = findUsable(token);
+        verifyPassword(document, password);
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("직인 이미지 파일을 선택하세요.");
+        }
+        if (file.getSize() > MAX_SEAL_BYTES) {
+            throw new IllegalArgumentException("직인 이미지는 1MB 이하여야 합니다.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !SEAL_CONTENT_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("직인 이미지는 PNG 또는 JPEG 만 업로드할 수 있습니다.");
+        }
+        try {
+            document.attachSeal(file.getBytes(), contentType);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("파일을 읽지 못했습니다. 다시 시도해 주세요.");
+        }
+    }
+
+    /** 토큰 미존재와 잠김을 동일하게 404 처리(존재 비노출). */
+    private OfficialDocument findUsable(String token) {
+        OfficialDocument document = documentRepository.findByShareToken(token)
+                .orElseThrow(DocumentNotFoundException::new);
+        if (document.isLocked(MAX_PASSWORD_FAILURES)) {
+            throw new DocumentNotFoundException();
+        }
+        return document;
+    }
+
+    private void verifyPassword(OfficialDocument document, String password) {
+        if (!passwordEncoder.matches(password, document.getPasswordHash())) {
+            document.recordPasswordFailure();
+            throw new DocumentPasswordException();
+        }
+        if (document.getFailedAttempts() > 0) {
+            document.resetPasswordFailures();
+        }
+    }
+
+    /** 256bit SecureRandom → base64url 43자(패딩 없음). URL 추측 불가 수준의 엔트로피. */
+    private String generateToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String toJson(Map<String, String> fields) {
+        try {
+            return objectMapper.writeValueAsString(fields);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("입력값을 처리하지 못했습니다.");
+        }
+    }
+
+    private Map<String, String> fromJson(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
+        } catch (JsonProcessingException e) {
+            // 저장 시 직렬화를 통과한 값이므로 도달 불가에 가깝다 — 방어적 처리.
+            throw new IllegalStateException("저장된 공문 데이터를 읽지 못했습니다.");
+        }
+    }
+}
