@@ -20,3 +20,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+# 수동 검증 편의: doctest 계정이 있으면 기동 시 승인+ADMIN 승격(가입 후 재기동하면 적용).
+# 검증 전용 테스트 스키마라서만 기본값을 둔다 — 운영(prod)은 환경변수 필수.
+app:
+  bootstrap-admin: ${APP_BOOTSTRAP_ADMIN:doctest}

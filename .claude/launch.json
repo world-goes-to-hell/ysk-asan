@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "D:\\DEV\\WORKSPACE\\PERSONAL\\ysk-asan\\gradlew.bat", "bootRun", "--args=--spring.profiles.active=local,localtest"],
+      "port": 8181
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}
