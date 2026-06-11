@@ -5,6 +5,7 @@ import AuthPage from './components/auth/AuthPage';
 import ContactsPage from './components/contacts/ContactsPage';
 import DocumentComposePage from './components/documents/DocumentComposePage';
 import DocumentsPage from './components/documents/DocumentsPage';
+import IssuedDocumentPage from './components/documents/IssuedDocumentPage';
 import PublicDocumentPage from './components/documents/PublicDocumentPage';
 import AppLayout from './components/layout/AppLayout';
 import DashboardPage from './components/dashboard/DashboardPage';
@@ -40,6 +41,8 @@ export default function App() {
             <Route path="admin/users" element={<AdminUsersPage />} />
           </Route>
         </Route>
+        {/* 발급자 뷰어 — 로그인 필수지만 인쇄용 전체 화면(AppLayout 밖) */}
+        <Route path="documents/issued/:token" element={<IssuedDocumentPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -9,15 +9,18 @@ import styles from '../../styles/documents.module.css';
 
 /**
  * 6~8차: 공개 공문 뷰어(/d/:token — 로그인 불필요).
- * 비밀번호 게이트 통과 후 공문을 렌더하고, 직인 이미지를 업로드하면 (인) 영역에 합성된다.
- * 비밀번호는 서버에 상태를 만들지 않으므로 메모리에 들고 열람/직인 요청마다 동봉한다.
+ * 직인은 잘못 올릴 수 있으므로 선택 즉시 저장하지 않는다:
+ * 선택 → 화면 미리보기만 → [직인 다시 선택]으로 교체 가능 → [저장]을 눌러야 서버에 확정되고
+ * 발급자가 볼 수 있게 된다. 저장 후에도 다시 선택→저장으로 교체할 수 있다.
  */
 export default function PublicDocumentPage() {
   const { token } = useParams();
   const fileInputRef = useRef(null);
 
   const [password, setPassword] = useState('');
-  const [doc, setDoc] = useState(null); // null = 게이트, {templateId, fields, seal} = 열람
+  const [doc, setDoc] = useState(null); // null = 게이트
+  const [pending, setPending] = useState(null); // 미저장 직인 {file, base64, contentType}
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -45,15 +48,29 @@ export default function PublicDocumentPage() {
     }
   };
 
-  const onSealFile = async (e) => {
+  // 파일 선택 = 로컬 미리보기만(서버 전송 X). 다시 선택하면 교체.
+  const onSealFile = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPending({ file, base64: String(reader.result).split(',')[1], contentType: file.type });
+      setNotice('');
+      setError('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 저장 확정 — 이때부터 발급자가 볼 수 있다.
+  const onSave = async () => {
     setBusy(true);
     setError('');
     try {
-      await documentsAPI.attachSeal(token, password, file);
-      await load(password); // 날인 결과 재조회 → (인) 위에 직인 표시
+      await documentsAPI.attachSeal(token, password, pending.file);
+      await load(password);
+      setPending(null);
+      setNotice('직인이 저장되었습니다. 발급자가 확인할 수 있습니다.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -89,21 +106,23 @@ export default function PublicDocumentPage() {
     );
   }
 
-  // 7~8차: 공문 + 직인
   const template = findTemplate(doc.templateId);
   if (!template) {
     return <div className={styles.viewerPage}>알 수 없는 양식입니다.</div>;
   }
 
+  // 미저장 직인이 있으면 그것을 우선 미리보기(저장된 직인 교체 시나리오 포함).
+  const displaySeal = pending
+    ? { base64: pending.base64, contentType: pending.contentType }
+    : doc.seal;
+
   return (
     <div className={styles.viewerPage}>
       <div className={styles.viewerActions}>
-        {!doc.seal && (
-          <button type="button" className="btn btn-primary"
-                  onClick={() => fileInputRef.current?.click()} disabled={busy}>
-            {busy ? '처리 중…' : '직인 삽입'}
-          </button>
-        )}
+        <button type="button" className="btn btn-primary"
+                onClick={() => fileInputRef.current?.click()} disabled={busy}>
+          {displaySeal ? '직인 다시 선택' : '직인 삽입'}
+        </button>
         <button type="button" className="btn btn-ghost" onClick={() => window.print()}>
           인쇄
         </button>
@@ -116,9 +135,22 @@ export default function PublicDocumentPage() {
           aria-label="직인 이미지 선택"
         />
       </div>
+      {pending && <p className={styles.pendingNotice}>미리보기 상태입니다 — 아래 [저장]을 눌러야 직인이 확정됩니다.</p>}
+      {notice && <p className={styles.savedNotice}>{notice}</p>}
       {error && <p className={auth.error}>{error}</p>}
 
-      <template.View fields={doc.fields} seal={doc.seal} />
+      <template.View fields={doc.fields} seal={displaySeal} />
+
+      {pending && (
+        <div className={styles.saveBar}>
+          <button type="button" className="btn btn-ghost" onClick={() => setPending(null)} disabled={busy}>
+            취소
+          </button>
+          <button type="button" className="btn btn-primary" onClick={onSave} disabled={busy}>
+            {busy ? '저장 중…' : '저장'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

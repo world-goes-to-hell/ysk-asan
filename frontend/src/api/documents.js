@@ -13,13 +13,16 @@ const documentsAPI = {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
-  // 직인 업로드(공개, 비밀번호 동봉)
+  // 직인 업로드(공개, 비밀번호 동봉) — 재업로드 시 교체
   attachSeal: (token, password, file) => {
     const form = new FormData();
     form.append('password', password);
     form.append('file', file);
     return apiFetch(`/api/documents/${token}/seal`, { method: 'POST', body: form });
   },
+  // 발급자 전용(로그인)
+  mine: () => apiFetch('/api/documents/mine'),
+  issuerView: (token) => apiFetch(`/api/documents/${token}/issuer-view`),
 };
 
 export default documentsAPI;

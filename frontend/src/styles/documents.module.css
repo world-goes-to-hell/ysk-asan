@@ -258,6 +258,97 @@
   gap: var(--space-2);
 }
 
+/* 직인 저장 확정 흐름 */
+.pendingNotice {
+  font-size: 0.85rem;
+  color: #b45309;
+  background: var(--warning-soft, #fef3c7);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.savedNotice {
+  font-size: 0.85rem;
+  color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.saveBar {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* 발급한 공문 목록 */
+.sectionTitle {
+  margin: var(--space-6) 0 var(--space-3);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.emptyIssued {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.issuedWrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.issuedTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.issuedTable thead th {
+  text-align: left;
+  padding: 11px var(--space-4);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.issuedTable tbody td {
+  padding: 10px var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.issuedTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.issuedAction {
+  text-align: right;
+  width: 120px;
+}
+
+.badgeSealed,
+.badgePending {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.badgeSealed {
+  color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+}
+
+.badgePending {
+  color: #b45309;
+  background: var(--warning-soft, #fef3c7);
+}
+
 /* 발급된 URL 표시 */
 .issuedUrl {
   display: block;
@@ -287,7 +378,10 @@
     background: #fff;
     padding: 0;
   }
-  .viewerActions {
+  .viewerActions,
+  .pendingNotice,
+  .savedNotice,
+  .saveBar {
     display: none;
   }
   .sheet {
