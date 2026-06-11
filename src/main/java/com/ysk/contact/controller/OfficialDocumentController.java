@@ -1,9 +1,12 @@
 package com.ysk.contact.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ysk.contact.dto.DocumentIssueRequest;
 import com.ysk.contact.dto.DocumentPasswordRequest;
 import com.ysk.contact.dto.DocumentViewResponse;
+import com.ysk.contact.dto.IssuedDocumentSummary;
 import com.ysk.contact.service.OfficialDocumentService;
 
 import jakarta.validation.Valid;
@@ -35,6 +39,19 @@ public class OfficialDocumentController {
     public ResponseEntity<Map<String, String>> issue(@Valid @RequestBody DocumentIssueRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("token", documentService.issue(request)));
+    }
+
+    /** 발급자 본인의 공문 목록(로그인 전용). */
+    @GetMapping("/mine")
+    public ResponseEntity<List<IssuedDocumentSummary>> mine(Authentication authentication) {
+        return ResponseEntity.ok(documentService.listMine(authentication.getName()));
+    }
+
+    /** 발급자 본인 열람(비밀번호 불필요 — 로그인 + 소유 확인). 인쇄용. */
+    @GetMapping("/{token}/issuer-view")
+    public ResponseEntity<DocumentViewResponse> issuerView(@PathVariable String token,
+                                                           Authentication authentication) {
+        return ResponseEntity.ok(documentService.issuerView(token, authentication.getName()));
     }
 
     @PostMapping("/{token}/view")

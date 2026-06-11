@@ -15,6 +15,8 @@ public interface OfficialDocumentRepository extends JpaRepository<OfficialDocume
 
     Optional<OfficialDocument> findByShareToken(String shareToken);
 
+    java.util.List<OfficialDocument> findByCreatedByOrderByCreatedAtDesc(String createdBy);
+
     /**
      * 비밀번호 검증용 조회 — 행 잠금(PESSIMISTIC_WRITE)으로 동시 시도 시
      * failedAttempts 증가의 lost-update 를 막는다(잠금 카운터 정확성).

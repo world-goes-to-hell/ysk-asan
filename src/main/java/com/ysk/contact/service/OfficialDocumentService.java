@@ -74,6 +74,26 @@ public class OfficialDocumentService {
         return document.getShareToken();
     }
 
+    /** 발급자 본인의 공문 목록(최신순). */
+    @Transactional(readOnly = true)
+    public java.util.List<com.ysk.contact.dto.IssuedDocumentSummary> listMine(String username) {
+        return documentRepository.findByCreatedByOrderByCreatedAtDesc(username).stream()
+                .map(com.ysk.contact.dto.IssuedDocumentSummary::from)
+                .toList();
+    }
+
+    /**
+     * 발급자 본인 열람 — 비밀번호 불필요(로그인 + 소유 확인). 타인 문서는 404(존재 비노출).
+     * 비밀번호 오류 잠금과 무관하게 발급자는 항상 열람할 수 있다.
+     */
+    @Transactional(readOnly = true)
+    public DocumentViewResponse issuerView(String token, String username) {
+        OfficialDocument document = documentRepository.findByShareToken(token)
+                .filter(d -> username.equals(d.getCreatedBy()))
+                .orElseThrow(DocumentNotFoundException::new);
+        return DocumentViewResponse.of(document, fromJson(document.getFieldsJson()));
+    }
+
     // noRollbackFor: 비밀번호 오류 시에도 실패 카운트 증가가 커밋되어야 잠금이 동작한다.
     @Transactional(noRollbackFor = DocumentPasswordException.class)
     public DocumentViewResponse view(String token, String password) {

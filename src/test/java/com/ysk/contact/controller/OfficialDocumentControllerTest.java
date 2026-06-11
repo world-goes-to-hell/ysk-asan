@@ -2,6 +2,8 @@ package com.ysk.contact.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -140,6 +142,94 @@ class OfficialDocumentControllerTest extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(passwordBody("view1234")))
                 .andExpect(status().isForbidden());
+    }
+
+    // ---------- 발급자 목록/열람 (M11) ----------
+
+    /** 지정 사용자로 발급(요청별 인증). */
+    private String issueAs(String username, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post(BASE).with(user(username)).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(issueBody("general-official", password)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
+    }
+
+    @Test
+    void mine_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get(BASE + "/mine")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void mine_listsOnlyOwnDocuments_withSealedFlag() throws Exception {
+        String myToken = issueAs("issuerA", "view1234");
+        issueAs("issuerB", "view1234"); // 타인 발급 — 목록에 나오면 안 됨
+
+        mockMvc.perform(get(BASE + "/mine").with(user("issuerA")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].token").value(myToken))
+                .andExpect(jsonPath("$[0].templateId").value("general-official"))
+                .andExpect(jsonPath("$[0].sealed").value(false));
+
+        // 직인 저장 후 sealed=true 로 반영
+        mockMvc.perform(multipart(BASE + "/" + myToken + "/seal")
+                        .file(sealPng(new byte[] { (byte) 0x89, 'P', 'N', 'G', 1 }))
+                        .param("password", "view1234")
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(BASE + "/mine").with(user("issuerA")))
+                .andExpect(jsonPath("$[0].sealed").value(true));
+    }
+
+    @Test
+    void issuerView_owner_returnsDocumentWithoutPassword() throws Exception {
+        String token = issueAs("issuerA", "view1234");
+
+        mockMvc.perform(get(BASE + "/" + token + "/issuer-view").with(user("issuerA")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.templateId").value("general-official"))
+                .andExpect(jsonPath("$.fields.title").value("협조 요청"));
+    }
+
+    @Test
+    void issuerView_otherUser_returns404() throws Exception {
+        String token = issueAs("issuerA", "view1234");
+
+        mockMvc.perform(get(BASE + "/" + token + "/issuer-view").with(user("issuerB")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void issuerView_unauthenticated_returns401() throws Exception {
+        String token = issueAs("issuerA", "view1234");
+
+        mockMvc.perform(get(BASE + "/" + token + "/issuer-view"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void seal_reupload_replacesImage() throws Exception {
+        // 잘못 올린 직인을 다시 저장하면 교체되어야 한다(저장 확정 흐름의 전제).
+        String token = issue("view1234");
+        byte[] first = new byte[] { (byte) 0x89, 'P', 'N', 'G', 1 };
+        byte[] second = new byte[] { (byte) 0x89, 'P', 'N', 'G', 2, 2 };
+
+        mockMvc.perform(multipart(BASE + "/" + token + "/seal").file(sealPng(first))
+                        .param("password", "view1234").with(csrf()))
+                .andExpect(status().isOk());
+        mockMvc.perform(multipart(BASE + "/" + token + "/seal").file(sealPng(second))
+                        .param("password", "view1234").with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post(BASE + "/" + token + "/view").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(passwordBody("view1234")))
+                .andExpect(jsonPath("$.sealImageBase64").value(
+                        java.util.Base64.getEncoder().encodeToString(second)));
     }
 
     // ---------- 직인 (8차) ----------
