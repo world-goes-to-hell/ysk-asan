@@ -1,0 +1,297 @@
+/* ───────── 공문 용지(A4 느낌) — 썸네일/미리보기/공개 뷰어 공유 ───────── */
+.sheet {
+  width: 660px;
+  min-height: 933px; /* A4 비율(210:297) */
+  padding: 64px 56px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  font-family: 'Noto Serif KR', 'Batang', 'BatangChe', serif;
+  color: #1a1a1a;
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+.orgHeader {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+}
+
+.orgSub {
+  text-align: center;
+  font-size: 1.05rem;
+  letter-spacing: 0.5em;
+  margin-top: 2px;
+}
+
+.rule {
+  border: none;
+  border-top: 2px solid #1a1a1a;
+  margin: 18px 0 22px;
+}
+
+.metaTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.metaTable th {
+  width: 90px;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.metaTable td {
+  padding: 4px 8px 4px 0;
+}
+
+.docTitle {
+  margin: 26px 0 18px;
+  font-weight: 700;
+}
+
+.body {
+  white-space: pre-wrap;
+  min-height: 200px;
+}
+
+.closing {
+  margin-top: 24px;
+}
+
+.signer {
+  margin-top: 64px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+}
+
+/* (인) + 직인 오버레이 */
+.sealArea {
+  position: relative;
+  display: inline-block;
+  padding: 0 4px;
+  color: #888;
+  font-size: 1rem;
+}
+
+.sealImg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%);
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  opacity: 0.9;
+  mix-blend-mode: multiply; /* 흰 배경 직인 스캔본도 자연스럽게 날인 */
+  pointer-events: none;
+}
+
+/* 재직증명서 */
+.certTitle {
+  text-align: center;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6em;
+  margin: 24px 0 48px;
+}
+
+.certTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.certTable th,
+.certTable td {
+  border: 1px solid #444;
+  padding: 10px 14px;
+}
+
+.certTable th {
+  width: 120px;
+  background: #f4f4f0;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+}
+
+.certStatement {
+  text-align: center;
+  margin: 56px 0 40px;
+  font-size: 1.05rem;
+}
+
+.certDate {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+/* ───────── 갤러리 ───────── */
+.page {
+  width: 100%;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.heading {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-5);
+}
+
+.card {
+  display: block;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* 썸네일 = 실제 양식의 축소 렌더(스크린샷 불필요, 항상 실양식과 일치) */
+.thumbWrap {
+  height: 280px;
+  overflow: hidden;
+  background: var(--bg-subtle);
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+}
+
+.thumbScale {
+  transform: scale(0.32);
+  transform-origin: top center;
+  flex-shrink: 0;
+}
+
+.cardBody {
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.cardTitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.cardSummary {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ───────── 작성 화면(폼 + 미리보기) ───────── */
+.composeLayout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.formPanel {
+  position: sticky;
+  top: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.previewPanel {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+/* ───────── 공개 뷰어 ───────── */
+.viewerPage {
+  min-height: 100vh;
+  background: var(--bg-subtle);
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.viewerActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* 발급된 URL 표시 */
+.issuedUrl {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  margin: 8px 0 16px;
+}
+
+@media (max-width: 1024px) {
+  .composeLayout {
+    grid-template-columns: 1fr;
+  }
+  .formPanel {
+    position: static;
+  }
+}
+
+/* 인쇄: 공문 용지만 출력(직인 오버레이 유지) */
+@media print {
+  .viewerPage {
+    background: #fff;
+    padding: 0;
+  }
+  .viewerActions {
+    display: none;
+  }
+  .sheet {
+    border: none;
+    box-shadow: none;
+  }
+}

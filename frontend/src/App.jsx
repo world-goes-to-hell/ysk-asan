@@ -3,6 +3,9 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import AdminUsersPage from './components/admin/AdminUsersPage';
 import AuthPage from './components/auth/AuthPage';
 import ContactsPage from './components/contacts/ContactsPage';
+import DocumentComposePage from './components/documents/DocumentComposePage';
+import DocumentsPage from './components/documents/DocumentsPage';
+import PublicDocumentPage from './components/documents/PublicDocumentPage';
 import AppLayout from './components/layout/AppLayout';
 import DashboardPage from './components/dashboard/DashboardPage';
 import { useAuth } from './contexts/AuthContext';
@@ -25,10 +28,14 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<AuthPage />} />
+      {/* 공개 공문 뷰어 — 로그인 불필요(토큰+비밀번호 보호) */}
+      <Route path="/d/:token" element={<PublicDocumentPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="contacts" element={<ContactsPage />} />
+          <Route path="documents" element={<DocumentsPage />} />
+          <Route path="documents/:templateId" element={<DocumentComposePage />} />
           <Route element={<RequireAdmin />}>
             <Route path="admin/users" element={<AdminUsersPage />} />
           </Route>
