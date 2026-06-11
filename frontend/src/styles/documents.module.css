@@ -95,6 +95,47 @@
   pointer-events: none;
 }
 
+/* 선금 청구 공문 */
+.apContact {
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  margin-top: 6px;
+  color: #333;
+}
+
+.apBelow {
+  text-align: center;
+  margin: 22px 0 14px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.apTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.apTable th,
+.apTable td {
+  border: 1px solid #444;
+  padding: 8px 6px;
+  text-align: center;
+  vertical-align: middle;
+  word-break: keep-all;
+}
+
+.apTable th {
+  background: #f4f4f0;
+  font-weight: 600;
+}
+
+.apAttachment {
+  margin-top: 26px;
+  font-size: 0.9rem;
+}
+
 /* 재직증명서 */
 .certTitle {
   text-align: center;

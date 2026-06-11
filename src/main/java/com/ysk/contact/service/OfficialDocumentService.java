@@ -38,7 +38,8 @@ import lombok.RequiredArgsConstructor;
 public class OfficialDocumentService {
 
     /** 프론트 템플릿 레지스트리(frontend/src/documents/templates.jsx)와 반드시 동기화. */
-    private static final Set<String> KNOWN_TEMPLATES = Set.of("general-official", "employment-cert");
+    private static final Set<String> KNOWN_TEMPLATES =
+            Set.of("general-official", "employment-cert", "advance-payment");
 
     private static final int MAX_PASSWORD_FAILURES = 10;
     private static final int MAX_FIELDS = 30;

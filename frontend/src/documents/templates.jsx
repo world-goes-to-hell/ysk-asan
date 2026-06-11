@@ -87,6 +87,67 @@ function EmploymentCertView({ fields = {}, seal = null }) {
   );
 }
 
+/**
+ * 선금 청구 공문 — 실제 원내 HWP 양식(학술연구용역 과제 선금 청구) 구조 기반.
+ * 인사말·"- 아 래 -"·발신명의(서울아산병원장)는 양식 고정 문구, 나머지는 입력.
+ */
+function AdvancePaymentView({ fields = {}, seal = null }) {
+  return (
+    <div className={styles.sheet}>
+      <div className={styles.orgHeader}>서 울 아 산 병 원</div>
+      <div className={styles.apContact}>
+        05505 서울특별시 송파구 올림픽로43길 88 TEL(02)3010-OOOO FAX(02)2045-OOOO
+        {' '}담당자 : {fields.manager}
+      </div>
+      <hr className={styles.rule} />
+      <table className={styles.metaTable}>
+        <tbody>
+          <tr><th>문서번호</th><td>{fields.docNumber}</td></tr>
+          <tr><th>발송일자</th><td>{fields.sendDate}</td></tr>
+          <tr><th>수신</th><td>{fields.receiver}</td></tr>
+          <tr><th>참조</th><td>{fields.reference}</td></tr>
+          <tr><th>제목</th><td>{fields.title}</td></tr>
+        </tbody>
+      </table>
+
+      <p className={styles.body} style={{ minHeight: 'auto', marginTop: 26 }}>
+        1. 귀 기관의 무궁한 번영을 기원합니다.{'\n'}
+        2. 학술연구용역과제 계약 체결관련 선금 요청 서류를 별첨과 같이 제출하오니
+        협조하여 주시기 바랍니다.
+      </p>
+
+      <p className={styles.apBelow}>- 아&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;래 -</p>
+
+      <table className={styles.apTable}>
+        <thead>
+          <tr>
+            <th>연구책임자</th>
+            <th>연구과제명</th>
+            <th>당해 연구비</th>
+            <th>당해 연구기간</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{fields.pi}</td>
+            <td>{fields.projectName}</td>
+            <td>{fields.budget}</td>
+            <td>{fields.period}</td>
+            <td>{fields.note}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p className={styles.apAttachment}>첨&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;부 : {fields.attachment}</p>
+
+      <div className={styles.signer}>
+        서 울 아 산 병 원 장 <SealArea seal={seal} />
+      </div>
+    </div>
+  );
+}
+
 export const TEMPLATES = [
   {
     id: 'general-official',
@@ -111,6 +172,40 @@ export const TEMPLATES = [
       signer: 'OOO병원장',
     },
     View: GeneralOfficialView,
+  },
+  {
+    id: 'advance-payment',
+    title: '선금 청구 공문',
+    summary: '학술연구용역 과제 선금 청구 서류 제출 공문',
+    fields: [
+      { key: 'manager', label: '담당자', placeholder: '홍길동 hong@amc.seoul.kr' },
+      { key: 'docNumber', label: '문서번호', placeholder: '서울아산 (연구기획팀) 제 2026 – 000000 호' },
+      { key: 'sendDate', label: '발송일자', placeholder: '2026년 06월 11일' },
+      { key: 'receiver', label: '수신', placeholder: '질병관리청 OOO연구원 OOO과' },
+      { key: 'reference', label: '참조', placeholder: '(없으면 비워두세요)' },
+      { key: 'title', label: '제목', placeholder: '학술연구용역 과제 선금 청구를 위한 서류 제출의 건(홍길동)' },
+      { key: 'pi', label: '연구책임자', placeholder: '홍길동 (서울아산병원)' },
+      { key: 'projectName', label: '연구과제명', placeholder: '[학술] OOO 연구' },
+      { key: 'budget', label: '당해 연구비', placeholder: '100,000,000원 (부가세 포함)' },
+      { key: 'period', label: '당해 연구기간', placeholder: '2026. 01. 01. ~ 2026. 12. 31.' },
+      { key: 'note', label: '비고', placeholder: '선금 70% 70,000,000원 (부가세 포함)' },
+      { key: 'attachment', label: '첨부', placeholder: '1. 학술연구용역 과제 선금 관련서류 일체. 끝.' },
+    ],
+    sample: {
+      manager: '홍길동 hong@amc.seoul.kr',
+      docNumber: '서울아산 (연구기획팀) 제 2026 – 000000 호',
+      sendDate: '2026년 06월 11일',
+      receiver: '질병관리청 OOO연구원 OOO과',
+      reference: '',
+      title: '학술연구용역 과제 선금 청구를 위한 서류 제출의 건',
+      pi: '홍길동 (서울아산병원)',
+      projectName: '[학술] OOO 연구과제',
+      budget: '100,000,000원 (부가세 포함)',
+      period: '2026. 01. 01. ~ 2026. 12. 31.',
+      note: '선금 70% 70,000,000원',
+      attachment: '1. 학술연구용역 과제 선금 관련서류 일체. 끝.',
+    },
+    View: AdvancePaymentView,
   },
   {
     id: 'employment-cert',
