@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
 import documentsAPI from '../../api/documents';
 import { findTemplate } from '../../documents/templates';
 import { useToast } from '../../hooks/useToast';
+import { departmentSuggestions } from '../../utils/suggestions';
+import AutocompleteInput from '../common/AutocompleteInput';
 import modal from '../../styles/modal.module.css';
 import auth from '../../styles/auth.module.css';
 import styles from '../../styles/documents.module.css';
 
 /**
  * 2~5차: 양식 작성(좌 폼 / 우 실시간 미리보기) → 직인 URL 발급(비밀번호 설정) → URL 복사.
+ * 단일라인 필드는 과거 발급에서 입력했던 값(이력 테이블)을 자동완성으로 제안한다.
  */
 export default function DocumentComposePage() {
   const { templateId } = useParams();
@@ -17,11 +20,17 @@ export default function DocumentComposePage() {
   const showToast = useToast();
 
   const [fields, setFields] = useState({});
+  const [history, setHistory] = useState({}); // {fieldKey: [과거 입력값(최근순)]}
   const [dialog, setDialog] = useState(null); // null | 'password' | {url}
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!template) return;
+    documentsAPI.fieldHistory(template.id).then(setHistory).catch(() => setHistory({}));
+  }, [template]);
 
   if (!template) return <Navigate to="/documents" replace />;
 
@@ -87,13 +96,13 @@ export default function DocumentComposePage() {
                   onChange={(e) => setField(f.key, e.target.value)}
                 />
               ) : (
-                <input
+                <AutocompleteInput
                   id={`doc-${f.key}`}
                   type="text"
-                  className="form-input"
                   placeholder={f.placeholder}
                   value={fields[f.key] || ''}
-                  onChange={(e) => setField(f.key, e.target.value)}
+                  onChange={(value) => setField(f.key, value)}
+                  getSuggestions={(value) => departmentSuggestions(value, history[f.key] || [])}
                 />
               )}
             </div>

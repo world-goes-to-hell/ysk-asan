@@ -23,6 +23,9 @@ const documentsAPI = {
   // 발급자 전용(로그인)
   mine: () => apiFetch('/api/documents/mine'),
   issuerView: (token) => apiFetch(`/api/documents/${token}/issuer-view`),
+  // 입력값 자동완성 이력 — {필드키: [값(최근 사용순)]}
+  fieldHistory: (templateId) =>
+    apiFetch(`/api/documents/field-history?templateId=${encodeURIComponent(templateId)}`),
 };
 
 export default documentsAPI;
