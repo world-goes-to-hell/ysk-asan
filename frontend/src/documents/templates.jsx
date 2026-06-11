@@ -10,15 +10,20 @@ import styles from '../styles/documents.module.css';
  * 새 양식 추가 = 이 배열에 항목 1개 추가(백엔드 OfficialDocumentService.KNOWN_TEMPLATES 동기화).
  */
 
+// 서버도 화이트리스트 검증하지만, data URI 에 들어가는 값이라 프론트에서 한 번 더 방어.
+const ALLOWED_SEAL_TYPES = ['image/png', 'image/jpeg'];
+
 /** (인) 표기 + 업로드된 직인 오버레이. */
 function SealArea({ seal }) {
+  const contentType =
+    seal && ALLOWED_SEAL_TYPES.includes(seal.contentType) ? seal.contentType : 'image/png';
   return (
     <span className={styles.sealArea}>
       (인)
       {seal && (
         <img
           className={styles.sealImg}
-          src={`data:${seal.contentType};base64,${seal.base64}`}
+          src={`data:${contentType};base64,${seal.base64}`}
           alt="직인"
         />
       )}

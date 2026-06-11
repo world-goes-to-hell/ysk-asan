@@ -98,15 +98,34 @@ public class OfficialDocumentService {
             throw new IllegalArgumentException("직인 이미지는 PNG 또는 JPEG 만 업로드할 수 있습니다.");
         }
         try {
-            document.attachSeal(file.getBytes(), contentType);
+            byte[] bytes = file.getBytes();
+            // Content-Type 은 클라이언트 선언값(스푸핑 가능) — 매직 바이트로 실제 이미지인지 확인.
+            validateImageMagicBytes(bytes, contentType);
+            document.attachSeal(bytes, contentType);
         } catch (IOException e) {
             throw new IllegalArgumentException("파일을 읽지 못했습니다. 다시 시도해 주세요.");
         }
     }
 
-    /** 토큰 미존재와 잠김을 동일하게 404 처리(존재 비노출). */
+    private static final java.util.Map<String, byte[]> MAGIC_BYTES = java.util.Map.of(
+            "image/png", new byte[] { (byte) 0x89, 0x50, 0x4E, 0x47 },
+            "image/jpeg", new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF });
+
+    private static void validateImageMagicBytes(byte[] data, String contentType) {
+        byte[] magic = MAGIC_BYTES.get(contentType);
+        for (int i = 0; magic != null && i < magic.length; i++) {
+            if (i >= data.length || data[i] != magic[i]) {
+                throw new IllegalArgumentException("직인 이미지 파일이 손상되었거나 형식이 올바르지 않습니다.");
+            }
+        }
+    }
+
+    /**
+     * 토큰 미존재와 잠김을 동일하게 404 처리(존재 비노출).
+     * 행 잠금 조회로 동시 비밀번호 시도 간 실패 카운터 경쟁을 막는다.
+     */
     private OfficialDocument findUsable(String token) {
-        OfficialDocument document = documentRepository.findByShareToken(token)
+        OfficialDocument document = documentRepository.findByShareTokenForUpdate(token)
                 .orElseThrow(DocumentNotFoundException::new);
         if (document.isLocked(MAX_PASSWORD_FAILURES)) {
             throw new DocumentNotFoundException();

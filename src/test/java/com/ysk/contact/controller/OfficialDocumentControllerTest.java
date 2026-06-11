@@ -188,6 +188,19 @@ class OfficialDocumentControllerTest extends IntegrationTest {
 
     @Test
     @WithMockUser
+    void seal_spoofedContentType_returns400() throws Exception {
+        // Content-Type 은 image/png 로 선언했지만 실제 바이트는 PNG 가 아님 — 매직 바이트 검증.
+        String token = issue("view1234");
+
+        mockMvc.perform(multipart(BASE + "/" + token + "/seal")
+                        .file(sealPng(new byte[] { 1, 2, 3, 4, 5 }))
+                        .param("password", "view1234")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
     void seal_nonImageContentType_returns400() throws Exception {
         String token = issue("view1234");
         MockMultipartFile pdf = new MockMultipartFile(

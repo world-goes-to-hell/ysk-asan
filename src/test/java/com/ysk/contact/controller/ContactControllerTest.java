@@ -65,6 +65,122 @@ class ContactControllerTest extends IntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // ---------- CSV 가져오기 ----------
+
+    private static final String IMPORT_HEADER = "부서,이름,이메일";
+
+    private org.springframework.mock.web.MockMultipartFile csvFile(byte[] bytes) {
+        return new org.springframework.mock.web.MockMultipartFile(
+                "file", "contacts.csv", "text/csv", bytes);
+    }
+
+    private byte[] utf8Bom(String csv) {
+        byte[] body = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] withBom = new byte[body.length + 3];
+        withBom[0] = (byte) 0xEF;
+        withBom[1] = (byte) 0xBB;
+        withBom[2] = (byte) 0xBF;
+        System.arraycopy(body, 0, withBom, 3, body.length);
+        return withBom;
+    }
+
+    @Test
+    void import_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(utf8Bom(IMPORT_HEADER + "\r\n"))).with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void import_withoutCsrf_returns403() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(utf8Bom(IMPORT_HEADER + "\r\n"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser
+    void import_utf8Bom_registersRows() throws Exception {
+        String csv = IMPORT_HEADER + "\r\n영업,홍길동,hong@ex.com\r\n개발,김철수,kim@ex.com\r\n";
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(utf8Bom(csv))).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imported").value(2));
+
+        mockMvc.perform(get(BASE))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.name=='홍길동')].department").value("영업"));
+    }
+
+    @Test
+    @WithMockUser
+    void import_cp949_registersKoreanRows() throws Exception {
+        // 한국어 Excel 의 레거시 "CSV(쉼표로 분리)" 저장은 BOM 없는 CP949 — 폴백 디코딩 검증.
+        String csv = IMPORT_HEADER + "\r\n영업,홍길동,hong@ex.com\r\n";
+        byte[] cp949 = csv.getBytes(java.nio.charset.Charset.forName("MS949"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(cp949)).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imported").value(1));
+
+        mockMvc.perform(get(BASE))
+                .andExpect(jsonPath("$[0].name").value("홍길동"));
+    }
+
+    @Test
+    @WithMockUser
+    void import_invalidRow_returns400WithRowErrors_andNothingImported() throws Exception {
+        // 3행(데이터 2행째)의 이메일 형식 오류 — all-or-nothing: 1건도 등록되지 않아야 한다.
+        String csv = IMPORT_HEADER + "\r\n영업,홍길동,hong@ex.com\r\n개발,김철수,not-an-email\r\n";
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(utf8Bom(csv))).with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.errors[0].row").value(3))
+                .andExpect(jsonPath("$.errors[0].message").exists());
+
+        mockMvc.perform(get(BASE)).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @WithMockUser
+    void import_wrongHeader_returns400() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import")
+                        .file(csvFile(utf8Bom("이름,부서,이메일\r\n홍길동,영업,hong@ex.com\r\n"))).with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        org.hamcrest.Matchers.containsString("부서,이름,이메일")));
+    }
+
+    @Test
+    @WithMockUser
+    void import_quotedFields_andGuardPrefix_roundTrip() throws Exception {
+        // M7 내보내기 산출물 형태: 쿼팅 + 수식 가드(') — 가져오기 시 원본 값으로 복원돼야 한다.
+        String csv = IMPORT_HEADER + "\r\n\"영업,\"\"1\"\"팀\",'=SUM(A1:A9),x@ex.com\r\n";
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(utf8Bom(csv))).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imported").value(1));
+
+        mockMvc.perform(get(BASE))
+                .andExpect(jsonPath("$[0].department").value("영업,\"1\"팀"))
+                .andExpect(jsonPath("$[0].name").value("=SUM(A1:A9)"));
+    }
+
+    @Test
+    @WithMockUser
+    void import_emptyFile_returns400() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart(BASE + "/import").file(csvFile(new byte[0])).with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
     // ---------- 변경 이력(작성자/수정자) ----------
 
     @Test
