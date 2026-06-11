@@ -96,7 +96,7 @@ function AdvancePaymentView({ fields = {}, seal = null }) {
     <div className={styles.sheet}>
       <div className={styles.orgHeader}>서 울 아 산 병 원</div>
       <div className={styles.apContact}>
-        05505 서울특별시 송파구 올림픽로43길 88 TEL(02)3010-OOOO FAX(02)2045-OOOO
+        05505 서울특별시 송파구 올림픽로43길 88 TEL{fields.tel} FAX{fields.fax}
         {' '}담당자 : {fields.manager}
       </div>
       <hr className={styles.rule} />
@@ -179,6 +179,8 @@ export const TEMPLATES = [
     summary: '학술연구용역 과제 선금 청구 서류 제출 공문',
     fields: [
       { key: 'manager', label: '담당자', placeholder: '홍길동 hong@amc.seoul.kr' },
+      { key: 'tel', label: 'TEL', placeholder: '(02)3010-0000' },
+      { key: 'fax', label: 'FAX', placeholder: '(02)2045-0000' },
       { key: 'docNumber', label: '문서번호', placeholder: '서울아산 (연구기획팀) 제 2026 – 000000 호' },
       { key: 'sendDate', label: '발송일자', placeholder: '2026년 06월 11일' },
       { key: 'receiver', label: '수신', placeholder: '질병관리청 OOO연구원 OOO과' },
@@ -193,6 +195,8 @@ export const TEMPLATES = [
     ],
     sample: {
       manager: '홍길동 hong@amc.seoul.kr',
+      tel: '(02)3010-0000',
+      fax: '(02)2045-0000',
       docNumber: '서울아산 (연구기획팀) 제 2026 – 000000 호',
       sendDate: '2026년 06월 11일',
       receiver: '질병관리청 OOO연구원 OOO과',
